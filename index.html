@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Arha's public photo and video album — browse by album and by month." />
+    <link rel="icon" href="data:," />
+    <title>Arha's Public Album</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#fffbf7;
+        --surface:#ffffff;
+        --surface-2:#fff1e6;
+        --ink:#2e2a25;
+        --ink-soft:#6f665c;
+        --line:#ecdccf;
+        --accent:#d94f2b;
+        --accent-ink:#ffffff;
+        --accent-soft:#ffe3d6;
+        --sage:#4f7a5b;
+        --sage-soft:#e2efe4;
+        --gold:#b7791f;
+        --gold-soft:#fbeecb;
+        --sky:#38618c;
+        --sky-soft:#dde9f5;
+        --shadow:0 10px 30px rgba(90,50,20,.10);
+        --radius:18px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#1d1916;
+          --surface:#292420;
+          --surface-2:#33291f;
+          --ink:#f5ede4;
+          --ink-soft:#c4b6a6;
+          --line:#453a30;
+          --accent:#ff7a52;
+          --accent-ink:#23120b;
+          --accent-soft:#4a2b1e;
+          --sage:#9cc7a6;
+          --sage-soft:#2c3d2f;
+          --gold:#eec26a;
+          --gold-soft:#45371a;
+          --sky:#9dc2e8;
+          --sky-soft:#27394f;
+          --shadow:0 10px 30px rgba(0,0,0,.35);
+        }
+      }
+      *{box-sizing:border-box}
+      html{scroll-behavior:smooth}
+      body{
+        margin:0;background:var(--bg);color:var(--ink);
+        font-family:"Nunito",system-ui,-apple-system,sans-serif;
+        font-size:16px;line-height:1.55;
+        -webkit-font-smoothing:antialiased;
+      }
+      button,[role="button"],select,summary,input:not([type="checkbox"],[type="radio"]){min-height:2.75rem}
+      button,select,input{font:inherit;color:inherit}
+      a{color:var(--accent)}
+      :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+      .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+      /* ---------- Header ---------- */
+      header{padding:44px 0 8px}
+      .title-row{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+      .mark{
+        width:58px;height:58px;flex:0 0 58px;border-radius:16px;
+        background:var(--accent);display:grid;place-items:center;
+        box-shadow:var(--shadow);
+      }
+      .mark svg{width:32px;height:32px;stroke:var(--accent-ink);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+      h1{
+        font-family:"Baloo 2",system-ui,sans-serif;
+        font-size:clamp(2.3rem,6vw,3.4rem);line-height:1.02;margin:2px 0 6px;font-weight:800;letter-spacing:-.01em;
+      }
+      .lede{margin:0;color:var(--ink-soft);font-size:1.08rem;max-width:560px}
+      .stats{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 6px}
+      .stat{
+        background:var(--surface);border:1px solid var(--line);border-radius:999px;
+        padding:8px 16px 8px 12px;display:flex;align-items:center;gap:9px;font-weight:700;font-size:.95rem;
+      }
+      .stat b{font-family:"Baloo 2",sans-serif;font-size:1.15rem;line-height:1}
+      .stat .dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+      .dot.coral{background:var(--accent)} .dot.sage{background:var(--sage)} .dot.gold{background:var(--gold)} .dot.sky{background:var(--sky)}
+
+      /* ---------- Filter bar ---------- */
+      .filters{
+        position:sticky;top:0;z-index:20;background:var(--bg);
+        padding:16px 0 12px;margin-top:18px;border-bottom:1px solid var(--line);
+      }
+      .filters-inner{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+      .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px}
+      .seg button{
+        border:0;background:transparent;border-radius:999px;padding:6px 16px;cursor:pointer;
+        font-weight:800;font-size:.92rem;min-height:2.4rem;color:var(--ink-soft);
+      }
+      .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+      select,.search{
+        background:var(--surface);border:1px solid var(--line);border-radius:999px;
+        padding:8px 16px;font-weight:700;font-size:.95rem;
+      }
+      select{cursor:pointer;max-width:100%}
+      .search{flex:1 1 170px;min-width:150px}
+      .search::placeholder{color:var(--ink-soft);font-weight:600}
+      .result-count{width:100%;margin:2px 2px 0;color:var(--ink-soft);font-size:.92rem;font-weight:600}
+
+      /* ---------- Gallery ---------- */
+      section{padding:30px 0 6px}
+      h2{font-family:"Baloo 2",sans-serif;font-size:1.65rem;margin:0 0 4px;font-weight:700}
+      .section-sub{margin:0 0 18px;color:var(--ink-soft)}
+      .grid{
+        display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;
+      }
+      .card{
+        background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        overflow:hidden;text-align:left;padding:0;cursor:pointer;width:100%;box-shadow:none;
+      }
+      .card figure{margin:0;aspect-ratio:4/3;background:var(--surface-2);position:relative;overflow:hidden}
+      .card img,.card video{width:100%;height:100%;object-fit:cover;display:block}
+      .card .play{
+        position:absolute;inset:auto 10px 10px auto;width:38px;height:38px;border-radius:50%;
+        background:rgba(20,14,10,.72);display:grid;place-items:center;
+      }
+      .card .play svg{width:16px;height:16px;fill:#fff;margin-left:2px}
+      .card figcaption{padding:12px 14px 14px}
+      .card .t{font-weight:800;display:block;line-height:1.3}
+      .card .m{color:var(--ink-soft);font-size:.88rem;font-weight:600;display:block;margin-top:2px}
+
+      .empty{
+        border:2px dashed var(--line);border-radius:var(--radius);background:var(--surface);
+        padding:44px 24px;text-align:center;
+      }
+      .empty .frame{
+        width:84px;height:84px;margin:0 auto 16px;border-radius:20px;background:var(--surface-2);
+        display:grid;place-items:center;
+      }
+      .empty .frame svg{width:42px;height:42px;stroke:var(--accent);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+      .empty h3{font-family:"Baloo 2",sans-serif;font-size:1.3rem;margin:0 0 6px}
+      .empty p{margin:0 auto;color:var(--ink-soft);max-width:420px}
+      .empty .btn{margin-top:18px}
+
+      .btn{
+        display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);
+        border:0;border-radius:999px;padding:10px 22px;font-weight:800;cursor:pointer;text-decoration:none;
+        min-height:2.75rem;
+      }
+
+      /* ---------- Albums ---------- */
+      .album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+      .album{
+        background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:20px;text-align:left;cursor:pointer;width:100%;color:inherit;
+      }
+      .album:hover{border-color:var(--accent)}
+      .album .icon{
+        width:48px;height:48px;border-radius:13px;display:grid;place-items:center;margin-bottom:12px;
+      }
+      .album .icon svg{width:25px;height:25px;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+      .icon.coral{background:var(--accent-soft)} .icon.coral svg{stroke:var(--accent)}
+      .icon.sage{background:var(--sage-soft)} .icon.sage svg{stroke:var(--sage)}
+      .icon.gold{background:var(--gold-soft)} .icon.gold svg{stroke:var(--gold)}
+      .icon.sky{background:var(--sky-soft)} .icon.sky svg{stroke:var(--sky)}
+      .album h3{font-family:"Baloo 2",sans-serif;font-size:1.18rem;margin:0 0 3px}
+      .album p{margin:0;color:var(--ink-soft);font-size:.94rem}
+      .album .count{display:inline-block;margin-top:12px;font-weight:800;font-size:.85rem;padding:4px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-soft)}
+
+      /* ---------- Months ---------- */
+      .month-list{display:flex;flex-direction:column;gap:10px}
+      .month-row{
+        display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);
+        border-radius:14px;padding:12px 16px;cursor:pointer;text-align:left;width:100%;color:inherit;font:inherit;
+      }
+      .month-row:hover{border-color:var(--accent)}
+      .month-row .cal{
+        flex:0 0 52px;text-align:center;background:var(--surface-2);border-radius:10px;padding:6px 0;line-height:1.15;
+      }
+      .month-row .cal b{display:block;font-family:"Baloo 2",sans-serif;font-size:1.05rem}
+      .month-row .cal span{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+      .month-row .name{font-weight:800}
+      .month-row .n{margin-left:auto;color:var(--ink-soft);font-weight:700;font-size:.92rem;white-space:nowrap}
+      .month-empty{
+        border:2px dashed var(--line);border-radius:var(--radius);background:var(--surface);
+        padding:26px 22px;color:var(--ink-soft);text-align:center;font-weight:600;
+      }
+
+      /* ---------- Add photos guide ---------- */
+      details.guide{
+        background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:4px 22px;margin:34px 0 10px;
+      }
+      details.guide summary{
+        cursor:pointer;font-family:"Baloo 2",sans-serif;font-weight:700;font-size:1.12rem;
+        padding:14px 0;display:flex;align-items:center;min-height:3rem;
+      }
+      details.guide ol{margin:0 0 8px;padding-left:22px}
+      details.guide li{margin-bottom:10px}
+      details.guide code{
+        background:var(--surface-2);border-radius:6px;padding:1px 7px;font-size:.88em;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;
+      }
+      details.guide pre{
+        background:var(--surface-2);border-radius:12px;padding:14px 16px;overflow-x:auto;
+        font-size:.85rem;line-height:1.5;margin:8px 0 16px;white-space:pre-wrap;word-break:break-word;
+      }
+      details.guide pre code{background:none;padding:0}
+
+      footer{padding:30px 0 44px;color:var(--ink-soft);font-size:.92rem;text-align:center}
+
+      /* ---------- Lightbox ---------- */
+      dialog#lightbox{
+        border:0;padding:0;background:transparent;max-width:min(94vw,880px);width:100%;
+      }
+      dialog#lightbox::backdrop{background:rgba(12,8,5,.82)}
+      .lb-box{background:var(--surface);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}
+      .lb-media{background:#000;display:grid;place-items:center;max-height:72vh}
+      .lb-media img,.lb-media video{max-width:100%;max-height:72vh;display:block}
+      .lb-bar{display:flex;align-items:flex-start;gap:12px;padding:14px 18px}
+      .lb-bar .t{font-weight:800;display:block}
+      .lb-bar .m{color:var(--ink-soft);font-size:.9rem;font-weight:600}
+      .lb-close{
+        margin-left:auto;flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
+        background:var(--surface);cursor:pointer;font-size:1.15rem;line-height:1;color:var(--ink);
+      }
+      /* ---------- Upload ---------- */
+      .upload{
+        background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:22px;box-shadow:var(--shadow);
+      }
+      .dropzone{
+        border:2px dashed var(--line);border-radius:14px;background:var(--surface-2);
+        padding:30px 18px;text-align:center;cursor:pointer;
+      }
+      .dropzone.drag{border-color:var(--accent)}
+      .dropzone svg{width:40px;height:40px;stroke:var(--accent);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-bottom:6px}
+      .dropzone .dz-title{font-family:"Baloo 2",sans-serif;font-weight:700;font-size:1.15rem;display:block}
+      .dropzone .dz-sub{color:var(--ink-soft);font-weight:600;font-size:.93rem;display:block;margin-top:2px}
+      .upload-fields{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+      .upload-fields label{font-weight:800;font-size:.88rem;display:flex;flex-direction:column;gap:5px;flex:1 1 160px}
+      .upload-fields select,.upload-fields input{
+        background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 13px;font-weight:700;width:100%;
+      }
+      .queue{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+      .queue-item{
+        display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);
+        border-radius:12px;padding:8px 10px;
+      }
+      .queue-item img,.queue-item .vthumb{
+        width:56px;height:56px;flex:0 0 56px;border-radius:9px;object-fit:cover;background:var(--surface-2);
+        display:grid;place-items:center;
+      }
+      .queue-item .vthumb svg{width:22px;height:22px;fill:var(--accent)}
+      .queue-item input{
+        flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+        padding:7px 11px;font-weight:700;
+      }
+      .queue-item .kind{font-size:.8rem;font-weight:800;color:var(--ink-soft);white-space:nowrap}
+      .queue-remove{
+        flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);
+        background:var(--surface);cursor:pointer;font-size:1rem;color:var(--ink);
+      }
+      .upload-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+      .btn.secondary{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+      .upload-note{margin:14px 0 0;color:var(--ink-soft);font-size:.93rem}
+      .publish-box{margin-top:16px}
+      .publish-box textarea{
+        width:100%;min-height:110px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+        padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.83rem;color:var(--ink);
+      }
+      .public-pill{
+        display:inline-flex;align-items:center;gap:8px;background:var(--sage-soft);color:var(--ink);
+        border-radius:999px;padding:7px 15px;font-weight:800;font-size:.9rem;margin-top:14px;
+      }
+      .public-pill .dot{width:9px;height:9px;border-radius:50%;background:var(--sage);flex:0 0 9px}
+      .hidden{display:none !important}
+
+      @media (max-width:560px){
+        header{padding-top:30px}
+        .grid,.album-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+        .filters-inner{gap:8px}
+        .seg{width:100%}
+        .seg button{flex:1}
+      }
+      @media (prefers-reduced-motion: reduce){
+        html{scroll-behavior:auto}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="title-row">
+          <div class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2.5"/><circle cx="9" cy="10.5" r="1.6"/><path d="M3 17.5 9.5 12l3.5 3 3-2.4L21 17"/></svg>
+          </div>
+          <div>
+            <h1>Arha&rsquo;s Album</h1>
+            <p class="lede">Photos and videos of Arha, shared with family and friends. Browse everything, pick an album, or jump to a month.</p>
+            <span class="public-pill"><span class="dot"></span>Public album — anyone with the link can view it, no sign-in needed, on any phone or browser</span>
+          </div>
+        </div>
+        <div class="stats" id="stats" aria-label="Album totals"></div>
+      </header>
+
+      <div class="filters" role="search">
+        <div class="filters-inner">
+          <div class="seg" role="group" aria-label="Filter by type">
+            <button type="button" data-type="all" aria-pressed="true">All</button>
+            <button type="button" data-type="photo" aria-pressed="false">Photos</button>
+            <button type="button" data-type="video" aria-pressed="false">Videos</button>
+          </div>
+          <select id="albumSelect" aria-label="Filter by album"></select>
+          <select id="monthSelect" aria-label="Filter by month"></select>
+          <input class="search" id="searchInput" type="search" placeholder="Search titles…" aria-label="Search titles" />
+          <p class="result-count" id="resultCount" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <main>
+        <section aria-labelledby="add-h">
+          <h2 id="add-h">Add photos &amp; videos</h2>
+          <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away.</p>
+          <div class="upload">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose photos or videos to add">
+              <svg viewBox="0 0 24 24"><path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M4 19.5h16"/></svg>
+              <span class="dz-title">Tap to choose photos or videos</span>
+              <span class="dz-sub">…or drag &amp; drop files here. You can pick several at once.</span>
+            </div>
+            <input type="file" id="fileInput" accept="image/*,video/*" multiple class="hidden" aria-hidden="true" tabindex="-1" />
+            <div class="upload-fields">
+              <label>Album
+                <select id="uploadAlbum"></select>
+              </label>
+              <label id="newAlbumWrap" class="hidden">New album name
+                <input type="text" id="newAlbumName" placeholder="e.g. Second Birthday" />
+              </label>
+              <label>Date taken
+                <input type="date" id="uploadDate" />
+              </label>
+            </div>
+            <div class="queue" id="queue"></div>
+            <div class="upload-actions">
+              <button class="btn" type="button" id="addToAlbum" disabled>Add to album</button>
+              <button class="btn secondary hidden" type="button" id="showPublish">Show publish steps for these photos</button>
+            </div>
+            <div class="publish-box hidden" id="publishBox">
+              <p class="upload-note">Added photos show in this album right away on this device. To put them on the public site so anyone with the link sees them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
+              <textarea id="publishText" readonly aria-label="Album entries for the added photos"></textarea>
+              <div class="upload-actions">
+                <button class="btn secondary" type="button" id="copyPublish">Copy these lines</button>
+                <span id="copyDone" class="hidden" style="font-weight:800">Copied ✓</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="gallery-section" aria-labelledby="gallery-h">
+          <h2 id="gallery-h">Gallery</h2>
+          <p class="section-sub" id="gallery-sub">Everything in the album, newest first.</p>
+
+          <div class="grid" id="grid"></div>
+
+          <div class="empty" id="emptyState">
+            <div class="frame" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2.5"/><circle cx="9" cy="10.5" r="1.6"/><path d="M3 17.5 9.5 12l3.5 3 3-2.4L21 17"/></svg>
+            </div>
+            <h3>No photos or videos yet</h3>
+            <p>This album is brand new and still empty. Add the first photos and videos with the uploader above — they&rsquo;ll appear right here.</p>
+            <a class="btn" href="#add-h">Add the first photos</a>
+          </div>
+
+          <div class="empty hidden" id="noMatchState">
+            <h3>Nothing matches those filters</h3>
+            <p>Try a different album, month, or search word.</p>
+            <button class="btn" type="button" id="clearFilters">Clear filters</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="albums-h">
+          <h2 id="albums-h">Albums</h2>
+          <p class="section-sub">Named collections. Tap one to see just that album.</p>
+          <div class="album-grid" id="albumGrid"></div>
+        </section>
+
+        <section aria-labelledby="months-h">
+          <h2 id="months-h">Browse by month</h2>
+          <p class="section-sub">Follow along month by month as Arha grows.</p>
+          <div class="month-list" id="monthList"></div>
+          <div class="month-empty" id="monthEmpty">No months yet — once the first photos are added, each month they were taken in will be listed here.</div>
+        </section>
+
+        <details class="guide" id="add-guide">
+          <summary>For the family — publishing added photos on GitHub &amp; Netlify</summary>
+          <ol>
+            <li>Put the photo or video file in the <code>photos/</code> folder of the site (next to <code>index.html</code>).</li>
+            <li>Open <code>index.html</code>, find the list marked <code>MEDIA</code> near the top of the script at the bottom, and add one line per file:
+              <pre><code>{ src: "photos/first-steps.mp4", type: "video",
+  album: "Milestones", date: "2026-11-14",
+  title: "First steps in the living room" }</code></pre>
+            </li>
+            <li><strong>GitHub:</strong> commit and push — if the repo is linked to Netlify, the site updates on its own in about a minute.</li>
+            <li><strong>Netlify (manual):</strong> drag the whole site folder onto your Netlify site&rsquo;s Deploys page instead.</li>
+          </ol>
+          <p>Albums are just names in that list — use one of the four album names below, or type a new name and it becomes a new album automatically. The month comes from the <code>date</code> on each line.</p>
+        </details>
+      </main>
+
+      <footer>Arha&rsquo;s Album · Made with love by her family</footer>
+    </div>
+
+    <dialog id="lightbox" aria-label="Photo viewer">
+      <div class="lb-box">
+        <div class="lb-media" id="lbMedia"></div>
+        <div class="lb-bar">
+          <div>
+            <span class="t" id="lbTitle"></span>
+            <span class="m" id="lbMeta"></span>
+          </div>
+          <button class="lb-close" id="lbClose" type="button" aria-label="Close viewer">✕</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script>
+      /* ================================================================
+         THE ALBUM'S CONTENTS
+         This page starts EMPTY — no photos from Arha's private album
+         were copied here. To add a photo or video, copy its file into
+         a photos/ folder next to this file and add one line below:
+
+         { src: "photos/park-day.jpg", type: "photo",
+           album: "Out & About", date: "2026-11-14",
+           title: "Morning at the park" }
+
+         type  : "photo" or "video"
+         album : one of the ALBUMS names below, or any new name
+         date  : "YYYY-MM-DD" — this is what Browse by Month uses
+         ================================================================ */
+      var MEDIA = [
+        /* add lines here — the gallery fills in automatically */
+      ];
+
+      var ALBUMS = [
+        { name: "Everyday Moments", tone: "coral",
+          blurb: "Ordinary days at home — playing, reading, and everyday moments.",
+          icon: '<svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 10v9h11v-9"/><path d="M10 19v-5h4v5"/></svg>' },
+        { name: "Milestones", tone: "gold",
+          blurb: "Firsts and big little achievements, in order.",
+          icon: '<svg viewBox="0 0 24 24"><path d="M12 3.5 14.3 8l4.9.7-3.6 3.4 1 4.8L12 14.7l-4.6 2.2 1-4.8L4.8 8.7 9.7 8z"/></svg>' },
+        { name: "Family & Friends", tone: "sage",
+          blurb: "Time with family and friends.",
+          icon: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.8 14.7c2.3.2 4 1.8 4.5 4.3"/></svg>' },
+        { name: "Out & About", tone: "sky",
+          blurb: "Parks, trips, and adventures beyond the front door.",
+          icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6z"/></svg>' }
+      ];
+
+      var state = { type: "all", album: "all", month: "all", query: "" };
+
+      var grid = document.getElementById("grid");
+      var emptyState = document.getElementById("emptyState");
+      var noMatchState = document.getElementById("noMatchState");
+      var resultCount = document.getElementById("resultCount");
+      var albumSelect = document.getElementById("albumSelect");
+      var monthSelect = document.getElementById("monthSelect");
+      var searchInput = document.getElementById("searchInput");
+
+      function monthKey(dateStr){ return (dateStr || "").slice(0, 7); }
+      function monthLabel(key){
+        var parts = key.split("-");
+        var d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+        return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      }
+      function prettyDate(dateStr){
+        var parts = (dateStr || "").split("-");
+        if (parts.length !== 3) return dateStr || "";
+        var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      }
+      function albumNames(){
+        var names = ALBUMS.map(function(a){ return a.name; });
+        MEDIA.forEach(function(m){ if (names.indexOf(m.album) === -1) names.push(m.album); });
+        return names;
+      }
+      function monthKeys(){
+        var keys = [];
+        MEDIA.forEach(function(m){
+          var k = monthKey(m.date);
+          if (k && keys.indexOf(k) === -1) keys.push(k);
+        });
+        return keys.sort().reverse();
+      }
+      function sortedMedia(){
+        return MEDIA.slice().sort(function(a, b){ return (b.date || "").localeCompare(a.date || ""); });
+      }
+
+      function renderStats(){
+        var photos = MEDIA.filter(function(m){ return m.type === "photo"; }).length;
+        var videos = MEDIA.filter(function(m){ return m.type === "video"; }).length;
+        var months = monthKeys().length;
+        document.getElementById("stats").innerHTML =
+          '<span class="stat"><span class="dot coral"></span><b>' + photos + '</b> photos</span>' +
+          '<span class="stat"><span class="dot gold"></span><b>' + videos + '</b> videos</span>' +
+          '<span class="stat"><span class="dot sage"></span><b>' + albumNames().length + '</b> albums</span>' +
+          '<span class="stat"><span class="dot sky"></span><b>' + months + '</b> ' + (months === 1 ? "month" : "months") + '</span>';
+      }
+
+      function renderSelects(){
+        albumSelect.innerHTML = '<option value="all">All albums</option>' +
+          albumNames().map(function(n){
+            var c = MEDIA.filter(function(m){ return m.album === n; }).length;
+            return '<option value="' + n.replace(/"/g, "&quot;") + '">' + n + " (" + c + ")</option>";
+          }).join("");
+        albumSelect.value = state.album;
+
+        var keys = monthKeys();
+        monthSelect.innerHTML = '<option value="all">All months</option>' +
+          keys.map(function(k){ return '<option value="' + k + '">' + monthLabel(k) + "</option>"; }).join("");
+        monthSelect.value = state.month;
+      }
+
+      function renderAlbums(){
+        document.getElementById("albumGrid").innerHTML = albumNames().map(function(name){
+          var def = null;
+          ALBUMS.forEach(function(a){ if (a.name === name) def = a; });
+          var count = MEDIA.filter(function(m){ return m.album === name; }).length;
+          var tone = def ? def.tone : "coral";
+          var blurb = def ? def.blurb : "A growing collection.";
+          var icon = def ? def.icon : '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2.5"/><circle cx="9" cy="10.5" r="1.6"/><path d="M3 17.5 9.5 12l3.5 3 3-2.4L21 17"/></svg>';
+          return '<button type="button" class="album" data-album="' + name.replace(/"/g, "&quot;") + '">' +
+            '<span class="icon ' + tone + '">' + icon + "</span>" +
+            "<h3>" + name + "</h3><p>" + blurb + "</p>" +
+            '<span class="count">' + (count === 0 ? "No photos yet" : count + (count === 1 ? " item" : " items")) + "</span></button>";
+        }).join("");
+        var btns = document.querySelectorAll(".album");
+        for (var i = 0; i < btns.length; i++){
+          btns[i].addEventListener("click", function(){
+            setFilter("album", this.getAttribute("data-album"));
+            document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" });
+          });
+        }
+      }
+
+      function renderMonths(){
+        var keys = monthKeys();
+        var list = document.getElementById("monthList");
+        document.getElementById("monthEmpty").classList.toggle("hidden", keys.length > 0);
+        list.innerHTML = keys.map(function(k){
+          var items = MEDIA.filter(function(m){ return monthKey(m.date) === k; });
+          var parts = k.split("-");
+          var mon = new Date(Number(parts[0]), Number(parts[1]) - 1, 1)
+            .toLocaleDateString("en-US", { month: "short" });
+          return '<button type="button" class="month-row" data-month="' + k + '">' +
+            '<span class="cal"><span>' + mon + "</span><b>" + parts[0] + "</b></span>" +
+            '<span class="name">' + monthLabel(k) + "</span>" +
+            '<span class="n">' + items.length + (items.length === 1 ? " item" : " items") + "</span></button>";
+        }).join("");
+        var rows = list.querySelectorAll(".month-row");
+        for (var i = 0; i < rows.length; i++){
+          rows[i].addEventListener("click", function(){
+            setFilter("month", this.getAttribute("data-month"));
+            document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" });
+          });
+        }
+      }
+
+      function filtered(){
+        var q = state.query.trim().toLowerCase();
+        return sortedMedia().filter(function(m){
+          if (state.type !== "all" && m.type !== state.type) return false;
+          if (state.album !== "all" && m.album !== state.album) return false;
+          if (state.month !== "all" && monthKey(m.date) !== state.month) return false;
+          if (q && (m.title || "").toLowerCase().indexOf(q) === -1) return false;
+          return true;
+        });
+      }
+
+      function renderGallery(){
+        var items = filtered();
+        var isEmptyAlbum = MEDIA.length === 0;
+        emptyState.classList.toggle("hidden", !isEmptyAlbum);
+        noMatchState.classList.toggle("hidden", isEmptyAlbum || items.length > 0);
+        grid.innerHTML = items.map(function(m, idx){
+          var media = m.type === "video"
+            ? '<video src="' + m.src + '" preload="metadata" muted playsinline></video>' +
+              '<span class="play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span>'
+            : '<img src="' + m.src + '" alt="' + (m.title || "Photo in Arha's album").replace(/"/g, "&quot;") + '" loading="lazy" />';
+          return '<button type="button" class="card" data-idx="' + idx + '"><figure>' + media +
+            "<figcaption><span class=\"t\">" + (m.title || "Untitled") + "</span>" +
+            '<span class="m">' + prettyDate(m.date) + " · " + m.album + "</span></figcaption></figure></button>";
+        }).join("");
+        var cards = grid.querySelectorAll(".card");
+        for (var i = 0; i < cards.length; i++){
+          cards[i].addEventListener("click", function(){
+            openLightbox(items[Number(this.getAttribute("data-idx"))]);
+          });
+        }
+        if (isEmptyAlbum){
+          resultCount.textContent = "The album is empty for now — check back soon.";
+        } else {
+          resultCount.textContent = "Showing " + items.length + " of " + MEDIA.length +
+            (MEDIA.length === 1 ? " item" : " items") + ".";
+        }
+      }
+
+      function renderAll(){
+        renderStats(); renderSelects(); renderAlbums(); renderMonths(); renderGallery();
+      }
+
+      function setFilter(key, value){
+        state[key] = value;
+        if (key === "album") albumSelect.value = value;
+        if (key === "month") monthSelect.value = value;
+        renderGallery();
+      }
+
+      /* ---------- Lightbox ---------- */
+      var lightbox = document.getElementById("lightbox");
+      function openLightbox(m){
+        if (!m) return;
+        document.getElementById("lbMedia").innerHTML = m.type === "video"
+          ? '<video src="' + m.src + '" controls autoplay playsinline></video>'
+          : '<img src="' + m.src + '" alt="' + (m.title || "").replace(/"/g, "&quot;") + '" />';
+        document.getElementById("lbTitle").textContent = m.title || "Untitled";
+        document.getElementById("lbMeta").textContent = prettyDate(m.date) + " · " + m.album;
+        if (typeof lightbox.showModal === "function") lightbox.showModal();
+      }
+      document.getElementById("lbClose").addEventListener("click", function(){ lightbox.close(); });
+      lightbox.addEventListener("click", function(e){ if (e.target === lightbox) lightbox.close(); });
+      lightbox.addEventListener("close", function(){ document.getElementById("lbMedia").innerHTML = ""; });
+
+      /* ---------- Controls ---------- */
+      var segBtns = document.querySelectorAll(".seg button");
+      for (var i = 0; i < segBtns.length; i++){
+        segBtns[i].addEventListener("click", function(){
+          for (var j = 0; j < segBtns.length; j++) segBtns[j].setAttribute("aria-pressed", "false");
+          this.setAttribute("aria-pressed", "true");
+          setFilter("type", this.getAttribute("data-type"));
+        });
+      }
+      albumSelect.addEventListener("change", function(){ setFilter("album", this.value); });
+      monthSelect.addEventListener("change", function(){ setFilter("month", this.value); });
+      searchInput.addEventListener("input", function(){ state.query = this.value; renderGallery(); });
+      document.getElementById("clearFilters").addEventListener("click", function(){
+        state = { type: "all", album: "all", month: "all", query: "" };
+        searchInput.value = "";
+        for (var j = 0; j < segBtns.length; j++)
+          segBtns[j].setAttribute("aria-pressed", segBtns[j].getAttribute("data-type") === "all" ? "true" : "false");
+        albumSelect.value = "all"; monthSelect.value = "all";
+        renderGallery();
+      });
+
+      /* ---------- Upload ---------- */
+      var pending = []; /* {file, url, type, title} */
+      var sessionAdded = []; /* MEDIA entries added this session */
+      var fileInput = document.getElementById("fileInput");
+      var dropzone = document.getElementById("dropzone");
+      var queueEl = document.getElementById("queue");
+      var addBtn = document.getElementById("addToAlbum");
+      var uploadAlbum = document.getElementById("uploadAlbum");
+      var newAlbumWrap = document.getElementById("newAlbumWrap");
+      var newAlbumName = document.getElementById("newAlbumName");
+      var uploadDate = document.getElementById("uploadDate");
+
+      (function initUploadDate(){
+        var now = new Date();
+        var m = String(now.getMonth() + 1).padStart(2, "0");
+        var d = String(now.getDate()).padStart(2, "0");
+        uploadDate.value = now.getFullYear() + "-" + m + "-" + d;
+      })();
+
+      function renderUploadAlbums(){
+        var current = uploadAlbum.value;
+        uploadAlbum.innerHTML = albumNames().map(function(n){
+          return '<option value="' + n.replace(/"/g, "&quot;") + '">' + n + "</option>";
+        }).join("") + '<option value="__new">＋ New album…</option>';
+        if (current && (albumNames().indexOf(current) !== -1 || current === "__new")) uploadAlbum.value = current;
+        newAlbumWrap.classList.toggle("hidden", uploadAlbum.value !== "__new");
+      }
+      uploadAlbum.addEventListener("change", renderUploadAlbums);
+
+      function cleanTitle(name){
+        return name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Untitled";
+      }
+      function fileKind(file){
+        if (file.type.indexOf("image/") === 0) return "photo";
+        if (file.type.indexOf("video/") === 0) return "video";
+        return null;
+      }
+      function addFiles(fileList){
+        for (var i = 0; i < fileList.length; i++){
+          var f = fileList[i];
+          var kind = fileKind(f);
+          if (!kind) continue;
+          pending.push({ file: f, url: URL.createObjectURL(f), type: kind, title: cleanTitle(f.name) });
+        }
+        renderQueue();
+      }
+      function renderQueue(){
+        queueEl.innerHTML = pending.map(function(p, idx){
+          var thumb = p.type === "photo"
+            ? '<img src="' + p.url + '" alt="" />'
+            : '<span class="vthumb" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span>';
+          return '<div class="queue-item">' + thumb +
+            '<input type="text" data-title="' + idx + '" value="' + p.title.replace(/"/g, "&quot;") + '" aria-label="Title for this item" />' +
+            '<span class="kind">' + (p.type === "photo" ? "Photo" : "Video") + "</span>" +
+            '<button type="button" class="queue-remove" data-remove="' + idx + '" aria-label="Remove this item">✕</button></div>';
+        }).join("");
+        addBtn.disabled = pending.length === 0;
+        addBtn.textContent = pending.length === 0 ? "Add to album"
+          : "Add " + pending.length + (pending.length === 1 ? " item" : " items") + " to album";
+        var inputs = queueEl.querySelectorAll("[data-title]");
+        for (var i = 0; i < inputs.length; i++){
+          inputs[i].addEventListener("input", function(){
+            pending[Number(this.getAttribute("data-title"))].title = this.value;
+          });
+        }
+        var removes = queueEl.querySelectorAll("[data-remove]");
+        for (var j = 0; j < removes.length; j++){
+          removes[j].addEventListener("click", function(){
+            var idx = Number(this.getAttribute("data-remove"));
+            URL.revokeObjectURL(pending[idx].url);
+            pending.splice(idx, 1);
+            renderQueue();
+          });
+        }
+      }
+
+      dropzone.addEventListener("click", function(){ fileInput.click(); });
+      dropzone.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
+      });
+      dropzone.addEventListener("dragover", function(e){ e.preventDefault(); dropzone.classList.add("drag"); });
+      dropzone.addEventListener("dragleave", function(){ dropzone.classList.remove("drag"); });
+      dropzone.addEventListener("drop", function(e){
+        e.preventDefault(); dropzone.classList.remove("drag");
+        if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+      });
+      fileInput.addEventListener("change", function(){
+        addFiles(fileInput.files);
+        fileInput.value = "";
+      });
+
+      addBtn.addEventListener("click", function(){
+        var album = uploadAlbum.value === "__new"
+          ? (newAlbumName.value.trim() || "Everyday Moments")
+          : uploadAlbum.value;
+        var date = uploadDate.value || "";
+        pending.forEach(function(p){
+          var entry = { src: p.url, type: p.type, album: album, date: date,
+                        title: p.title.trim() || "Untitled", fileName: p.file.name };
+          MEDIA.push(entry);
+          sessionAdded.push(entry);
+        });
+        pending = [];
+        renderQueue();
+        renderAll();
+        renderUploadAlbums();
+        document.getElementById("showPublish").classList.remove("hidden");
+        document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" });
+      });
+
+      document.getElementById("showPublish").addEventListener("click", function(){
+        var lines = sessionAdded.map(function(m){
+          return '{ src: "photos/' + m.fileName + '", type: "' + m.type + '", album: "' +
+            m.album.replace(/"/g, '\\"') + '", date: "' + m.date + '", title: "' +
+            (m.title || "").replace(/"/g, '\\"') + '" }';
+        });
+        document.getElementById("publishText").value = lines.join(",\n");
+        document.getElementById("publishBox").classList.remove("hidden");
+        document.getElementById("publishBox").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      document.getElementById("copyPublish").addEventListener("click", function(){
+        var ta = document.getElementById("publishText");
+        ta.select();
+        var done = function(){ document.getElementById("copyDone").classList.remove("hidden"); };
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(ta.value).then(done, function(){ document.execCommand("copy"); done(); });
+        } else { document.execCommand("copy"); done(); }
+      });
+
+      renderAll();
+      renderUploadAlbums();
+    </script>
+  </body>
+</html>
