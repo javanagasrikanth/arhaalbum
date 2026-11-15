@@ -404,7 +404,6 @@
       .wall-form input{flex:1;min-width:180px;border:1px solid var(--line);border-radius:999px;padding:10px 18px;background:var(--surface)}
       .wall-note{color:var(--ink-soft);font-size:.9rem;font-weight:600;margin:10px 0 0}
       @media (prefers-color-scheme: dark){
-        body{background:linear-gradient(180deg,#16283e 0%,#1d1916 45%,#2b1f26 100%)}
         .wall{background:linear-gradient(160deg,#3a2f22,#33242e 55%,#22303f)}
         .pin{background:#2e2823;color:#f5ede4}
         #playBg .cloud{opacity:.16}
@@ -1960,7 +1959,8 @@
 
       /* ---------- Playful interactive background ---------- */
       (function(){
-        if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        /* Build the bright background even with Reduce Motion on —
+           the stylesheet keeps everything still in that case. */
         var bg = document.createElement("div");
         bg.id = "playBg";
         bg.setAttribute("aria-hidden", "true");
