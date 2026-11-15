@@ -340,14 +340,14 @@
       <main>
         <section aria-labelledby="add-h">
           <h2 id="add-h">Add photos &amp; videos</h2>
-          <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away.</p>
+          <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away. iPhone <strong>.heic</strong> photos work too — they are converted to JPEG automatically, so they show on any phone or browser.</p>
           <div class="upload">
             <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose photos or videos to add">
               <svg viewBox="0 0 24 24"><path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M4 19.5h16"/></svg>
               <span class="dz-title">Tap to choose photos or videos</span>
-              <span class="dz-sub">…or drag &amp; drop files here. You can pick several at once.</span>
+              <span class="dz-sub">…or drag &amp; drop files here. You can pick several at once. iPhone .heic photos are welcome too.</span>
             </div>
-            <input type="file" id="fileInput" accept="image/*,video/*" multiple class="hidden" aria-hidden="true" tabindex="-1" />
+            <input type="file" id="fileInput" accept="image/*,video/*,.heic,.heif" multiple class="hidden" aria-hidden="true" tabindex="-1" />
             <div class="upload-fields">
               <label>Album
                 <select id="uploadAlbum"></select>
@@ -360,6 +360,7 @@
               </label>
             </div>
             <div class="queue" id="queue"></div>
+            <p class="upload-note hidden" id="heicStatus" role="status"></p>
             <div class="upload-actions">
               <button class="btn" type="button" id="addToAlbum" disabled>Add to album</button>
               <button class="btn secondary hidden" type="button" id="showPublish">Show publish steps for these photos</button>
@@ -369,6 +370,7 @@
               <textarea id="publishText" readonly aria-label="Album entries for the added photos"></textarea>
               <div class="upload-actions">
                 <button class="btn secondary" type="button" id="copyPublish">Copy these lines</button>
+                <button class="btn secondary hidden" type="button" id="downloadConverted">Download converted JPEGs</button>
                 <span id="copyDone" class="hidden" style="font-weight:800">Copied ✓</span>
               </div>
             </div>
@@ -430,6 +432,7 @@
             <li><strong>Netlify (manual):</strong> drag the whole site folder onto your Netlify site&rsquo;s Deploys page instead.</li>
           </ol>
           <p>Albums are just names in that list — use one of the four album names below, or type a new name and it becomes a new album automatically. The month comes from the <code>date</code> on each line.</p>
+          <p><strong>iPhone .heic photos:</strong> they are converted to JPEG in the browser when you add them, so the file to save into <code>photos/</code> is the downloaded JPEG (with the <code>.jpg</code> name shown in the publish steps), not the original <code>.heic</code> file.</p>
         </details>
       </main>
 
@@ -843,18 +846,75 @@
       function cleanTitle(name){
         return name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Untitled";
       }
+      function isHeic(file){
+        return file.type === "image/heic" || file.type === "image/heif" ||
+          /\.hei[cf]$/i.test(file.name || "");
+      }
       function fileKind(file){
+        if (isHeic(file)) return "photo";
         if (file.type.indexOf("image/") === 0) return "photo";
         if (file.type.indexOf("video/") === 0) return "video";
         return null;
       }
-      function addFiles(fileList){
-        for (var i = 0; i < fileList.length; i++){
-          var f = fileList[i];
-          var kind = fileKind(f);
-          if (!kind) continue;
-          pending.push({ file: f, url: URL.createObjectURL(f), type: kind, title: cleanTitle(f.name) });
+      var heic2anyPromise = null;
+      function loadHeic2Any(){
+        if (window.heic2any) return Promise.resolve(window.heic2any);
+        if (!heic2anyPromise){
+          heic2anyPromise = new Promise(function(resolve, reject){
+            var sc = document.createElement("script");
+            sc.src = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
+            sc.onload = function(){ resolve(window.heic2any); };
+            sc.onerror = function(){ reject(new Error("converter did not load")); };
+            document.head.appendChild(sc);
+          });
         }
+        return heic2anyPromise;
+      }
+      function convertHeic(file){
+        return loadHeic2Any().then(function(convert){
+          return convert({ blob: file, toType: "image/jpeg", quality: 0.85 });
+        }).then(function(out){
+          var blob = Array.isArray(out) ? out[0] : out;
+          var name = file.name.replace(/\.hei[cf]$/i, ".jpg");
+          return new File([blob], name, { type: "image/jpeg" });
+        });
+      }
+      function heicStatus(msg, show){
+        var el = document.getElementById("heicStatus");
+        el.textContent = msg || "";
+        el.classList.toggle("hidden", !show);
+      }
+      function addFiles(fileList){
+        var files = Array.prototype.slice.call(fileList);
+        var heics = files.filter(isHeic);
+        var failed = [];
+        var done = 0;
+        if (heics.length) heicStatus("Converting " + heics.length + " .heic photo" + (heics.length === 1 ? "" : "s") + " to JPEG…", true);
+        files.forEach(function(f){
+          var kind = fileKind(f);
+          if (!kind) return;
+          if (!isHeic(f)){
+            pending.push({ file: f, url: URL.createObjectURL(f), type: kind, title: cleanTitle(f.name), converted: false });
+            renderQueue();
+            return;
+          }
+          convertHeic(f).then(function(jpg){
+            pending.push({ file: jpg, url: URL.createObjectURL(jpg), type: "photo", title: cleanTitle(jpg.name), converted: true });
+            renderQueue();
+          }).catch(function(){
+            failed.push(f.name);
+          }).then(function(){
+            done++;
+            if (done === heics.length){
+              if (failed.length){
+                heicStatus("Could not convert " + failed.join(", ") + " — this browser could not read that .heic file. On iPhone, open it in Photos and share it as JPEG, or set Camera > Formats to Most Compatible for future photos, then try again.", true);
+              } else {
+                heicStatus("", false);
+              }
+              renderQueue();
+            }
+          });
+        });
         renderQueue();
       }
       function renderQueue(){
@@ -864,7 +924,7 @@
             : '<span class="vthumb" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span>';
           return '<div class="queue-item">' + thumb +
             '<input type="text" data-title="' + idx + '" value="' + p.title.replace(/"/g, "&quot;") + '" aria-label="Title for this item" />' +
-            '<span class="kind">' + (p.type === "photo" ? "Photo" : "Video") + "</span>" +
+            '<span class="kind">' + (p.type === "photo" ? (p.converted ? "Photo · HEIC→JPEG" : "Photo") : "Video") + "</span>" +
             '<button type="button" class="queue-remove" data-remove="' + idx + '" aria-label="Remove this item">✕</button></div>';
         }).join("");
         addBtn.disabled = pending.length === 0;
@@ -909,7 +969,7 @@
         var date = uploadDate.value || "";
         pending.forEach(function(p){
           var entry = { src: p.url, type: p.type, album: album, date: date,
-                        title: p.title.trim() || "Untitled", fileName: p.file.name };
+                        title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted };
           MEDIA.push(entry);
           sessionAdded.push(entry);
         });
@@ -922,6 +982,8 @@
       });
 
       document.getElementById("showPublish").addEventListener("click", function(){
+        var hasConverted = sessionAdded.some(function(m){ return m.converted; });
+        document.getElementById("downloadConverted").classList.toggle("hidden", !hasConverted);
         var lines = sessionAdded.map(function(m){
           return '{ src: "photos/' + m.fileName + '", type: "' + m.type + '", album: "' +
             m.album.replace(/"/g, '\\"') + '", date: "' + m.date + '", title: "' +
@@ -930,6 +992,15 @@
         document.getElementById("publishText").value = lines.join(",\n");
         document.getElementById("publishBox").classList.remove("hidden");
         document.getElementById("publishBox").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      document.getElementById("downloadConverted").addEventListener("click", function(){
+        sessionAdded.filter(function(m){ return m.converted; }).forEach(function(m, i){
+          setTimeout(function(){
+            var a = document.createElement("a");
+            a.href = m.src; a.download = m.fileName;
+            document.body.appendChild(a); a.click(); a.remove();
+          }, i * 300);
+        });
       });
       document.getElementById("copyPublish").addEventListener("click", function(){
         var ta = document.getElementById("publishText");
