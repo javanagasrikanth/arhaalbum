@@ -366,7 +366,7 @@
               <button class="btn secondary hidden" type="button" id="showPublish">Show publish steps for these photos</button>
             </div>
             <div class="publish-box hidden" id="publishBox">
-              <p class="upload-note">Added photos show in this album right away on this device. To put them on the public site so anyone with the link sees them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
+              <p class="upload-note">Added photos stay in this album on this device, even after you close the page and come back. To put them on the public site so anyone with the link sees them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
               <textarea id="publishText" readonly aria-label="Album entries for the added photos"></textarea>
               <div class="upload-actions">
                 <button class="btn secondary" type="button" id="copyPublish">Copy these lines</button>
@@ -817,6 +817,45 @@
       /* ---------- Upload ---------- */
       var pending = []; /* {file, url, type, title} */
       var sessionAdded = []; /* MEDIA entries added this session */
+      /* Keep added photos on this device after the page is closed: the
+         browser's own storage (IndexedDB) holds the actual files, so a
+         reload or a new session brings them back. Nothing is sent anywhere. */
+      var albumDB = null;
+      function openAlbumDB(){
+        if (albumDB) return Promise.resolve(albumDB);
+        if (!("indexedDB" in window)) return Promise.reject(new Error("this browser has no offline storage"));
+        return new Promise(function(resolve, reject){
+          var req = indexedDB.open("arhaAlbum", 1);
+          req.onupgradeneeded = function(){ req.result.createObjectStore("uploads", { keyPath: "id" }); };
+          req.onsuccess = function(){ albumDB = req.result; resolve(albumDB); };
+          req.onerror = function(){ reject(req.error || new Error("could not open storage")); };
+        });
+      }
+      function saveUpload(item){
+        return openAlbumDB().then(function(db){
+          return new Promise(function(resolve, reject){
+            var tx = db.transaction("uploads", "readwrite");
+            tx.objectStore("uploads").put(item);
+            tx.oncomplete = resolve;
+            tx.onerror = function(){ reject(tx.error || new Error("could not save")); };
+          });
+        });
+      }
+      function loadUploads(){
+        return openAlbumDB().then(function(db){
+          return new Promise(function(resolve, reject){
+            var req = db.transaction("uploads", "readonly").objectStore("uploads").getAll();
+            req.onsuccess = function(){ resolve(req.result || []); };
+            req.onerror = function(){ reject(req.error || new Error("could not read storage")); };
+          });
+        });
+      }
+      var storageWarned = false;
+      function warnStorage(){
+        if (storageWarned) return;
+        storageWarned = true;
+        heicStatus("This browser could not save the added photos on this device, so they will disappear when you leave the page. Use the publish steps below to keep them permanently.", true);
+      }
       var fileInput = document.getElementById("fileInput");
       var dropzone = document.getElementById("dropzone");
       var queueEl = document.getElementById("queue");
@@ -1006,6 +1045,10 @@
                         title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted };
           MEDIA.push(entry);
           sessionAdded.push(entry);
+          saveUpload({ id: Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+            blob: p.file, type: p.type, album: album, date: date,
+            title: entry.title, fileName: p.file.name, converted: !!p.converted })
+            .catch(warnStorage);
         });
         pending = [];
         renderQueue();
@@ -1047,6 +1090,20 @@
 
       renderAll();
       renderUploadAlbums();
+      /* Bring back photos added in earlier sessions on this device. */
+      loadUploads().then(function(items){
+        if (!items.length) return;
+        items.forEach(function(it){
+          var url = URL.createObjectURL(it.blob);
+          var entry = { src: url, type: it.type, album: it.album, date: it.date,
+                        title: it.title, fileName: it.fileName, converted: !!it.converted };
+          MEDIA.push(entry);
+          sessionAdded.push(entry);
+        });
+        renderAll();
+        renderUploadAlbums();
+        document.getElementById("showPublish").classList.remove("hidden");
+      }).catch(function(){ /* first visit, or this browser has no storage: nothing to restore */ });
     </script>
   </body>
 </html>
