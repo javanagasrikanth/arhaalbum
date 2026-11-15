@@ -856,28 +856,62 @@
         if (file.type.indexOf("video/") === 0) return "video";
         return null;
       }
+      /* HEIC conversion: try the phone/browser's own decoder first (iPhone
+         Safari decodes .heic natively, and it needs no download), then the
+         heic2any converter, trying a second copy of it if the first fails. */
+      function heicBlobToFile(blob, file){
+        var name = file.name.replace(/\.hei[cf]$/i, ".jpg");
+        return new File([blob], name, { type: "image/jpeg" });
+      }
+      function nativeHeicToJpeg(file){
+        if (typeof createImageBitmap !== "function") return Promise.reject(new Error("this browser has no built-in HEIC decoder"));
+        return createImageBitmap(file).then(function(bmp){
+          var canvas = document.createElement("canvas");
+          canvas.width = bmp.width; canvas.height = bmp.height;
+          canvas.getContext("2d").drawImage(bmp, 0, 0);
+          if (bmp.close) bmp.close();
+          return new Promise(function(resolve, reject){
+            canvas.toBlob(function(blob){
+              blob ? resolve(blob) : reject(new Error("the photo decoded but came out empty"));
+            }, "image/jpeg", 0.85);
+          });
+        });
+      }
+      function loadScript(url){
+        return new Promise(function(resolve, reject){
+          var sc = document.createElement("script");
+          sc.src = url;
+          sc.onload = function(){ resolve(window.heic2any); };
+          sc.onerror = function(){ reject(new Error("converter script did not load")); };
+          document.head.appendChild(sc);
+        });
+      }
       var heic2anyPromise = null;
       function loadHeic2Any(){
         if (window.heic2any) return Promise.resolve(window.heic2any);
         if (!heic2anyPromise){
-          heic2anyPromise = new Promise(function(resolve, reject){
-            var sc = document.createElement("script");
-            sc.src = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
-            sc.onload = function(){ resolve(window.heic2any); };
-            sc.onerror = function(){ reject(new Error("converter did not load")); };
-            document.head.appendChild(sc);
-          });
+          heic2anyPromise = loadScript("https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js")
+            .catch(function(){ return loadScript("https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"); })
+            .then(function(convert){
+              if (typeof convert !== "function") throw new Error("converter did not load");
+              return convert;
+            });
         }
         return heic2anyPromise;
       }
       function convertHeic(file){
-        return loadHeic2Any().then(function(convert){
-          return convert({ blob: file, toType: "image/jpeg", quality: 0.85 });
-        }).then(function(out){
-          var blob = Array.isArray(out) ? out[0] : out;
-          var name = file.name.replace(/\.hei[cf]$/i, ".jpg");
-          return new File([blob], name, { type: "image/jpeg" });
-        });
+        return nativeHeicToJpeg(file)
+          .catch(function(nativeErr){
+            return loadHeic2Any().then(function(convert){
+              return convert({ blob: file, toType: "image/jpeg", quality: 0.85 });
+            }).then(function(out){
+              return Array.isArray(out) ? out[0] : out;
+            }).catch(function(libErr){
+              throw new Error("built-in decoder: " + (nativeErr && nativeErr.message) +
+                "; converter: " + (libErr && libErr.message));
+            });
+          })
+          .then(function(blob){ return heicBlobToFile(blob, file); });
       }
       function heicStatus(msg, show){
         var el = document.getElementById("heicStatus");
@@ -901,13 +935,13 @@
           convertHeic(f).then(function(jpg){
             pending.push({ file: jpg, url: URL.createObjectURL(jpg), type: "photo", title: cleanTitle(jpg.name), converted: true });
             renderQueue();
-          }).catch(function(){
-            failed.push(f.name);
+          }).catch(function(err){
+            failed.push(f.name + (err && err.message ? " (" + err.message + ")" : ""));
           }).then(function(){
             done++;
             if (done === heics.length){
               if (failed.length){
-                heicStatus("Could not convert " + failed.join(", ") + " — this browser could not read that .heic file. On iPhone, open it in Photos and share it as JPEG, or set Camera > Formats to Most Compatible for future photos, then try again.", true);
+                heicStatus("Could not convert " + failed.join(", ") + ". You can also just send the .heic photo to me in this chat and I will convert it and add it to the album for you. Or, on iPhone, open it in Photos and share it as JPEG, or set Camera > Formats to Most Compatible for future photos, then try again.", true);
               } else {
                 heicStatus("", false);
               }
