@@ -1343,7 +1343,7 @@
         addBtn.disabled = true;
         addBtn.textContent = "Saving…";
         heicStatus("Saving " + toSave.length + " photo" + (toSave.length === 1 ? "" : "s") + " on this device — please keep this page open until it finishes…", true);
-        var saved = 0, failed = 0;
+        var saved = 0, failed = 0, lastErr = "";
         var chain = Promise.resolve();
         toSave.forEach(function(p){
           chain = chain.then(function(){
@@ -1356,7 +1356,7 @@
               blob: p.file, type: p.type, album: album, date: date,
               title: entry.title, fileName: p.file.name, converted: !!p.converted })
               .then(function(){ saved++; })
-              .catch(function(){ failed++; });
+              .catch(function(err){ failed++; if (err) lastErr = (err.name ? err.name + ": " : "") + (err.message || ""); });
           });
         });
         chain.then(function(){
@@ -1365,7 +1365,12 @@
           if (failed === 0){
             heicStatus("Saved " + saved + " photo" + (saved === 1 ? "" : "s") + " on this device ✓ — they will still be here when you reopen the page. Use Show publish steps below to make them visible to everyone.", true);
           } else {
-            heicStatus("Saved " + saved + " of " + toSave.length + " photos on this device — the phone's storage refused the rest. Try adding about 10 at a time, or send the photos to me in chat and I will publish them for you.", true);
+            var reason = "";
+            if (/quota/i.test(lastErr)) reason = "the phone's storage is full or the batch was too big — try adding about 10 at a time.";
+            else if (/security|not allowed|denied|blocked|unknownerror|abort/i.test(lastErr)) reason = "this browser is blocking the album's storage (private mode or blocked cookies can do this) — try opening the album in Safari, not private mode.";
+            else if (lastErr) reason = "the phone's storage refused it (" + lastErr + ").";
+            else reason = "the phone's storage refused the rest. Try adding about 10 at a time.";
+            heicStatus("Saved " + saved + " of " + toSave.length + " photos on this device — " + reason + " Or send the photos to me in chat and I will publish them for you.", true);
           }
           /* Show the album the photos just went into: the gallery may still be
              filtered to another album (e.g. Diwali 2026), which would hide the
