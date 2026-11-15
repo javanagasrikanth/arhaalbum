@@ -371,13 +371,13 @@
       #playBg .cloud::before{width:55%;height:150%;left:12%;top:-70%}
       #playBg .cloud::after{width:40%;height:110%;right:14%;top:-45%}
       @keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(115vw)}}
-      #playBg .star{position:absolute;color:#ff9d00;animation:twinkle 2.8s ease-in-out infinite}
+      #playBg .star{position:absolute;color:#ff9d00;text-shadow:0 0 10px rgba(255,190,0,.95),0 0 3px #fff;animation:twinkle 1.8s ease-in-out infinite}
       #playBg .sun{position:absolute;top:10px;right:12px;font-size:3.4rem;line-height:1;animation:sunPulse 4s ease-in-out infinite}
       @keyframes sunPulse{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.12) rotate(14deg)}}
       #playBg .float-heart{position:absolute;color:#ff4d7e;opacity:.75;animation:heartFloat 9s ease-in-out infinite}
       @keyframes heartFloat{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-26px) rotate(8deg)}}
       .rainbow-stripe{position:fixed;top:0;left:0;right:0;height:10px;z-index:61;background:linear-gradient(90deg,#ff5c5c,#ffb703,#ffe14d,#3ecf6e,#2fa8ff,#a06bff)}
-      @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.8) rotate(0deg)}50%{opacity:.95;transform:scale(1.15) rotate(20deg)}}
+      @keyframes twinkle{0%,100%{opacity:.6;transform:scale(.9) rotate(0deg)}50%{opacity:1;transform:scale(1.3) rotate(20deg)}}
       #playBg .balloon{position:absolute;width:56px;height:66px;border-radius:50% 50% 50% 50%/55% 55% 45% 45%;cursor:pointer;pointer-events:auto;animation:bob 5s ease-in-out infinite;box-shadow:inset -8px -10px 0 rgba(0,0,0,.10),inset 7px 9px 12px rgba(255,255,255,.6)}
       #playBg .balloon::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:34px;background:rgba(90,60,40,.35);transform:translateX(-50%)}
       #playBg .balloon::before{content:"";position:absolute;left:50%;top:100%;width:8px;height:8px;margin-left:-4px;background:inherit;border-radius:50%}
@@ -2010,8 +2010,8 @@
           star.textContent = starChars[s % starChars.length];
           star.style.left = rnd(2, 96) + "%";
           star.style.top = rnd(2, 60) + "%";
-          star.style.fontSize = rnd(0.7, 1.3) + "rem";
-          star.style.animationDelay = rnd(0, 2.8) + "s";
+          star.style.fontSize = rnd(1.1, 1.8) + "rem";
+          star.style.animationDelay = rnd(0, 1.8) + "s";
           bg.appendChild(star);
         }
         /* Rainbow stripe across the very top + a smiling sun */
