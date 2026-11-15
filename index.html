@@ -1343,6 +1343,13 @@
         });
         pending = [];
         renderQueue();
+        /* Show the album the photos just went into: the gallery may still be
+           filtered to another album (e.g. Diwali 2026), which would hide the
+           new photos even though they were added. */
+        state = { type: "all", album: album, month: "all", query: "" };
+        searchInput.value = "";
+        for (var j = 0; j < segBtns.length; j++)
+          segBtns[j].setAttribute("aria-pressed", segBtns[j].getAttribute("data-type") === "all" ? "true" : "false");
         renderAll();
         renderUploadAlbums();
         document.getElementById("showPublish").classList.remove("hidden");
