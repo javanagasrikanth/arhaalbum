@@ -968,9 +968,11 @@
         if (file.type.indexOf("video/") === 0) return "video";
         return null;
       }
-      /* HEIC conversion: try the phone/browser's own decoder first (iPhone
-         Safari decodes .heic natively, and it needs no download), then the
-         heic2any converter, trying a second copy of it if the first fails. */
+      /* HEIC conversion: try the phone/browser's own decoder first, then the
+         heic2any converter (2023, libheif 1.16), then the newer heic-to
+         converter (libheif 1.22.2), which reads photos from newer iPhones
+         that the 2023 converter rejects as unsupported. Each step is only
+         downloaded if the one before it fails. */
       function heicBlobToFile(blob, file){
         var name = file.name.replace(/\.hei[cf]$/i, ".jpg");
         return new File([blob], name, { type: "image/jpeg" });
@@ -1011,6 +1013,19 @@
         }
         return heic2anyPromise;
       }
+      var heicToPromise = null;
+      function loadHeicTo(){
+        if (typeof window.HeicTo === "function") return Promise.resolve(window.HeicTo);
+        if (!heicToPromise){
+          heicToPromise = loadScript("https://cdn.jsdelivr.net/npm/heic-to@1.5.2/dist/iife/heic-to.js")
+            .catch(function(){ return loadScript("https://unpkg.com/heic-to@1.5.2/dist/iife/heic-to.js"); })
+            .then(function(){
+              if (typeof window.HeicTo !== "function") throw new Error("newer converter did not load");
+              return window.HeicTo;
+            });
+        }
+        return heicToPromise;
+      }
       function convertHeic(file){
         return nativeHeicToJpeg(file)
           .catch(function(nativeErr){
@@ -1019,8 +1034,13 @@
             }).then(function(out){
               return Array.isArray(out) ? out[0] : out;
             }).catch(function(libErr){
-              throw new Error("built-in decoder: " + (nativeErr && nativeErr.message) +
-                "; converter: " + (libErr && libErr.message));
+              return loadHeicTo().then(function(heicTo){
+                return heicTo({ blob: file, type: "image/jpeg", quality: 0.85 });
+              }).catch(function(newErr){
+                throw new Error("built-in decoder: " + (nativeErr && nativeErr.message) +
+                  "; converter (2023): " + (libErr && libErr.message) +
+                  "; newer converter: " + (newErr && newErr.message));
+              });
             });
           })
           .then(function(blob){ return heicBlobToFile(blob, file); });
