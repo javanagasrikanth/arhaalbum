@@ -1330,30 +1330,52 @@
           ? (newAlbumName.value.trim() || "Everyday Moments")
           : uploadAlbum.value;
         var date = uploadDate.value || "";
-        pending.forEach(function(p){
-          var upId = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-          var entry = { src: p.url, type: p.type, album: album, date: date,
-                        title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted, uploadId: upId };
-          MEDIA.push(entry);
-          sessionAdded.push(entry);
-          saveUpload({ id: upId,
-            blob: p.file, type: p.type, album: album, date: date,
-            title: entry.title, fileName: p.file.name, converted: !!p.converted })
-            .catch(warnStorage);
-        });
+        var toSave = pending.slice();
         pending = [];
         renderQueue();
-        /* Show the album the photos just went into: the gallery may still be
-           filtered to another album (e.g. Diwali 2026), which would hide the
-           new photos even though they were added. */
-        state = { type: "all", album: album, month: "all", query: "" };
-        searchInput.value = "";
-        for (var j = 0; j < segBtns.length; j++)
-          segBtns[j].setAttribute("aria-pressed", segBtns[j].getAttribute("data-type") === "all" ? "true" : "false");
-        renderAll();
-        renderUploadAlbums();
-        document.getElementById("showPublish").classList.remove("hidden");
-        document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" });
+        /* Save one photo at a time and wait for each save to finish: firing
+           dozens of large saves at once can make the phone's browser storage
+           refuse them, so photos showed for the session and vanished on
+           reopen. Count what actually saved and say so plainly. */
+        addBtn.disabled = true;
+        addBtn.textContent = "Saving…";
+        heicStatus("Saving " + toSave.length + " photo" + (toSave.length === 1 ? "" : "s") + " on this device — please keep this page open until it finishes…", true);
+        var saved = 0, failed = 0;
+        var chain = Promise.resolve();
+        toSave.forEach(function(p){
+          chain = chain.then(function(){
+            var upId = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+            var entry = { src: p.url, type: p.type, album: album, date: date,
+                          title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted, uploadId: upId };
+            MEDIA.push(entry);
+            sessionAdded.push(entry);
+            return saveUpload({ id: upId,
+              blob: p.file, type: p.type, album: album, date: date,
+              title: entry.title, fileName: p.file.name, converted: !!p.converted })
+              .then(function(){ saved++; })
+              .catch(function(){ failed++; });
+          });
+        });
+        chain.then(function(){
+          addBtn.disabled = false;
+          addBtn.textContent = "Add to album";
+          if (failed === 0){
+            heicStatus("Saved " + saved + " photo" + (saved === 1 ? "" : "s") + " on this device ✓ — they will still be here when you reopen the page. Use Show publish steps below to make them visible to everyone.", true);
+          } else {
+            heicStatus("Saved " + saved + " of " + toSave.length + " photos on this device — the phone's storage refused the rest. Try adding about 10 at a time, or send the photos to me in chat and I will publish them for you.", true);
+          }
+          /* Show the album the photos just went into: the gallery may still be
+             filtered to another album (e.g. Diwali 2026), which would hide the
+             new photos even though they were added. */
+          state = { type: "all", album: album, month: "all", query: "" };
+          searchInput.value = "";
+          for (var j = 0; j < segBtns.length; j++)
+            segBtns[j].setAttribute("aria-pressed", segBtns[j].getAttribute("data-type") === "all" ? "true" : "false");
+          renderAll();
+          renderUploadAlbums();
+          document.getElementById("showPublish").classList.remove("hidden");
+          document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" });
+        });
       });
 
       document.getElementById("showPublish").addEventListener("click", function(){
