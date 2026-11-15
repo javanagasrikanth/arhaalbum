@@ -365,11 +365,52 @@
       #lbLove.loved{color:var(--accent)}
       .lb-media.playing img{animation:kb 9s ease-out forwards}
       @keyframes kb{from{transform:scale(1)}to{transform:scale(1.09)}}
+      /* ---------- Playful interactive background + kids' wall ---------- */
+      .wrap{position:relative;z-index:1}
+      #playBg{position:fixed;inset:0;z-index:0;overflow:hidden}
+      #playBg .cloud{position:absolute;left:0;background:#fff;border-radius:999px;opacity:.75;filter:blur(1px);animation:drift linear infinite}
+      #playBg .cloud::before,#playBg .cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+      #playBg .cloud::before{width:55%;height:150%;left:12%;top:-70%}
+      #playBg .cloud::after{width:40%;height:110%;right:14%;top:-45%}
+      @keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(115vw)}}
+      #playBg .star{position:absolute;color:#e8a93d;animation:twinkle 2.8s ease-in-out infinite}
+      @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.8) rotate(0deg)}50%{opacity:.95;transform:scale(1.15) rotate(20deg)}}
+      #playBg .balloon{position:absolute;width:44px;height:54px;border-radius:50% 50% 50% 50%/55% 55% 45% 45%;cursor:pointer;animation:bob 5s ease-in-out infinite;box-shadow:inset -6px -8px 0 rgba(0,0,0,.08)}
+      #playBg .balloon::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:34px;background:rgba(90,60,40,.35);transform:translateX(-50%)}
+      #playBg .balloon::before{content:"";position:absolute;left:50%;top:100%;width:8px;height:8px;margin-left:-4px;background:inherit;border-radius:50%}
+      @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+      #playBg .balloon.pop{animation:popBalloon .3s ease forwards}
+      @keyframes popBalloon{0%{transform:scale(1);opacity:1}100%{transform:scale(1.9);opacity:0}}
+      #playBg .sparkle{position:absolute;font-size:1.2rem;pointer-events:none;animation:sparkleUp .8s ease-out forwards}
+      @keyframes sparkleUp{from{opacity:1;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-34px) scale(1.3)}}
+      .parade{overflow:hidden;padding:10px 0 18px;position:relative;z-index:1}
+      .parade .march{display:inline-block;white-space:nowrap;animation:marchAcross 30s linear infinite;font-size:2rem}
+      .parade .march span{display:inline-block;margin:0 .45em;animation:marchBob .55s ease-in-out infinite alternate}
+      @keyframes marchAcross{from{transform:translateX(-30vw)}to{transform:translateX(115vw)}}
+      @keyframes marchBob{from{transform:translateY(0)}to{transform:translateY(-9px)}}
+      .wall{margin:26px 0 10px;padding:26px;border-radius:26px;background:linear-gradient(160deg,#fff6d8,#ffeef3 55%,#e8f4ff);box-shadow:var(--shadow);position:relative;overflow:hidden}
+      .wall::before{content:"✦  ★  ✦";position:absolute;top:12px;right:20px;color:#e8a93d;letter-spacing:.4em;font-size:1rem;opacity:.8}
+      .wall h2{margin-bottom:4px}
+      .wall-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin:20px 0}
+      .pin{background:#fffdf6;border-radius:6px;padding:30px 14px 14px;box-shadow:0 8px 18px rgba(90,50,20,.14);position:relative;font-weight:700;line-height:1.4;transform:rotate(-1.2deg)}
+      .pin:nth-child(even){transform:rotate(1.4deg)}
+      .pin::before{content:"";position:absolute;top:-9px;left:50%;width:64px;height:20px;margin-left:-32px;background:rgba(232,169,61,.45);border-left:1px dashed rgba(255,255,255,.7);border-right:1px dashed rgba(255,255,255,.7);transform:rotate(-2deg)}
+      .pin .who{display:block;margin-top:8px;color:var(--ink-soft);font-size:.85rem;font-weight:800}
+      .pin .del{position:absolute;top:6px;right:8px;border:0;background:none;font-size:1rem;cursor:pointer;color:var(--ink-soft);min-height:0;padding:0;line-height:1}
+      .wall-form{display:flex;gap:10px;flex-wrap:wrap}
+      .wall-form input{flex:1;min-width:180px;border:1px solid var(--line);border-radius:999px;padding:10px 18px;background:var(--surface)}
+      .wall-note{color:var(--ink-soft);font-size:.9rem;font-weight:600;margin:10px 0 0}
+      @media (prefers-color-scheme: dark){
+        .wall{background:linear-gradient(160deg,#3a2f22,#33242e 55%,#22303f)}
+        .pin{background:#2e2823;color:#f5ede4}
+        #playBg .cloud{opacity:.14}
+      }
       @media (prefers-reduced-motion: reduce){
         html{scroll-behavior:auto}
         .hero-photo img,.lb-media.playing img,.hero-hearts span,.heart.loved{animation:none}
         .card,.card img,.card video{transition:none}
         .card.reveal{opacity:1;transform:none}
+        #playBg .cloud,#playBg .star,#playBg .balloon,.parade .march,.parade .march span{animation:none}
       }
     </style>
   </head>
@@ -403,6 +444,18 @@
             <button class="btn secondary" type="button" id="heroBrowse">Browse photos</button>
           </div>
         </div>
+      </section>
+
+      <section class="wall" id="loveWall" aria-labelledby="wall-h">
+        <h2 id="wall-h">Arha&rsquo;s Wall of Love</h2>
+        <p class="section-sub">Sweet notes and little milestones, pinned up like a kid&rsquo;s bedroom wall. Tap a balloon in the background to pop it!</p>
+        <div class="wall-grid" id="wallGrid"></div>
+        <form class="wall-form" id="wallForm">
+          <input id="wallNote" type="text" maxlength="120" placeholder="Pin a sweet note for Arha…" aria-label="Write a love note" required />
+          <input id="wallName" type="text" maxlength="24" placeholder="From (e.g. Amma)" aria-label="Your name" />
+          <button class="btn" type="submit">Pin it ♥</button>
+        </form>
+        <p class="wall-note">Notes are saved on this device, so the family can keep adding to the wall.</p>
       </section>
 
       <div class="filters" role="search">
@@ -542,6 +595,8 @@
 
       <footer>Arha&rsquo;s Album · Made with love by her family</footer>
     </div>
+
+    <div class="parade" aria-hidden="true"><div class="march"><span>🐘</span><span style="animation-delay:.15s">🦁</span><span style="animation-delay:.3s">🐰</span><span style="animation-delay:.45s">🦒</span><span style="animation-delay:.6s">🐻</span><span style="animation-delay:.75s">🐼</span><span style="animation-delay:.9s">🦊</span><span style="animation-delay:1.05s">🐵</span><span style="animation-delay:1.2s">🎈</span></div></div>
 
     <dialog id="lightbox" aria-label="Photo viewer">
       <div class="lb-box">
@@ -984,7 +1039,7 @@
       }
 
       function renderAll(){
-        renderStats(); renderSelects(); renderAlbums(); renderMonths(); renderGallery(); renderHero();
+        renderStats(); renderSelects(); renderAlbums(); renderMonths(); renderGallery(); renderHero(); renderWall();
       }
 
       function setFilter(key, value){
@@ -1898,6 +1953,110 @@
         if (castCtx.getCurrentSession()) { castCurrentPhoto(); return; }
         castCtx.requestSession().then(function(){}, function(){});
       });
+
+      /* ---------- Playful interactive background ---------- */
+      (function(){
+        if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var bg = document.createElement("div");
+        bg.id = "playBg";
+        bg.setAttribute("aria-hidden", "true");
+        document.body.appendChild(bg);
+        var rnd = function(a, b){ return a + Math.random() * (b - a); };
+        /* Clouds drifting across the sky */
+        for (var c = 0; c < 4; c++){
+          var cloud = document.createElement("span");
+          cloud.className = "cloud";
+          var cw = rnd(70, 130);
+          cloud.style.width = cw + "px";
+          cloud.style.height = (cw * 0.36) + "px";
+          cloud.style.top = rnd(2, 38) + "%";
+          cloud.style.animationDuration = rnd(70, 130) + "s";
+          cloud.style.animationDelay = (-rnd(0, 90)) + "s";
+          bg.appendChild(cloud);
+        }
+        /* Twinkling stars */
+        var starChars = ["✦", "★", "✧"];
+        for (var s = 0; s < 9; s++){
+          var star = document.createElement("span");
+          star.className = "star";
+          star.textContent = starChars[s % starChars.length];
+          star.style.left = rnd(2, 96) + "%";
+          star.style.top = rnd(2, 60) + "%";
+          star.style.fontSize = rnd(0.7, 1.3) + "rem";
+          star.style.animationDelay = rnd(0, 2.8) + "s";
+          bg.appendChild(star);
+        }
+        /* Balloons you can pop — they float back after a few seconds */
+        var colors = ["#ff8fab", "#ffc94d", "#7cc4ff", "#9be3a6", "#c9a7ff", "#ff9d6c"];
+        function addBalloon(){
+          var b = document.createElement("span");
+          b.className = "balloon";
+          b.style.background = colors[Math.floor(Math.random() * colors.length)];
+          b.style.left = rnd(3, 92) + "%";
+          b.style.top = rnd(12, 78) + "%";
+          b.style.animationDelay = (-rnd(0, 5)) + "s";
+          b.addEventListener("click", function(e){
+            e.stopPropagation();
+            b.classList.add("pop");
+            setTimeout(function(){
+              if (b.parentNode) b.parentNode.removeChild(b);
+              setTimeout(addBalloon, 2500);
+            }, 320);
+          });
+          bg.appendChild(b);
+        }
+        for (var i = 0; i < 6; i++) addBalloon();
+        /* Tap empty space for a sparkle */
+        bg.addEventListener("click", function(e){
+          var sp = document.createElement("span");
+          sp.className = "sparkle";
+          sp.textContent = "✨";
+          sp.style.left = (e.clientX - 10) + "px";
+          sp.style.top = (e.clientY - 10) + "px";
+          bg.appendChild(sp);
+          setTimeout(function(){ if (sp.parentNode) sp.parentNode.removeChild(sp); }, 850);
+        });
+      })();
+
+      /* ---------- Wall of Love ---------- */
+      var wallNotes = (function(){
+        try { return JSON.parse(localStorage.getItem("arhaAlbumWallNotes") || "[]"); } catch(e){ return []; }
+      })();
+      function saveWallNotes(){ try { localStorage.setItem("arhaAlbumWallNotes", JSON.stringify(wallNotes)); } catch(e){} }
+      function escWall(str){ return String(str == null ? "" : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+      function renderWall(){
+        var grid = document.getElementById("wallGrid");
+        if (!grid) return;
+        var html = "";
+        html += '<div class="pin">Born November 2024 ♥<span class="who">The day our world got brighter</span></div>';
+        html += '<div class="pin">Diwali 2026 — diyas, lights and giggles at the temple<span class="who">Our festival of lights</span></div>';
+        html += '<div class="pin"><span id="wallCount">' + MEDIA.length + '</span> precious moments — and counting!<span class="who">Every photo tells a story</span></div>';
+        html += '<div class="pin">Playgrounds, parks, naps and yawns<span class="who">Everyday magic</span></div>';
+        wallNotes.forEach(function(n, idx){
+          html += '<div class="pin">' + escWall(n.text) + '<span class="who">— ' + escWall(n.name || "Family") + '</span><button class="del" type="button" data-wall-del="' + idx + '" aria-label="Remove this note">×</button></div>';
+        });
+        grid.innerHTML = html;
+        var dels = grid.querySelectorAll("[data-wall-del]");
+        for (var i = 0; i < dels.length; i++){
+          dels[i].addEventListener("click", function(){
+            wallNotes.splice(Number(this.getAttribute("data-wall-del")), 1);
+            saveWallNotes();
+            renderWall();
+          });
+        }
+      }
+      document.getElementById("wallForm").addEventListener("submit", function(e){
+        e.preventDefault();
+        var note = document.getElementById("wallNote").value.trim();
+        var name = document.getElementById("wallName").value.trim();
+        if (!note) return;
+        wallNotes.push({ text: note, name: name, at: new Date().toISOString().slice(0, 10) });
+        saveWallNotes();
+        renderWall();
+        document.getElementById("wallNote").value = "";
+        document.getElementById("wallName").value = "";
+      });
+      renderWall();
     </script>
   </body>
 </html>
