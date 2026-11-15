@@ -235,6 +235,14 @@
       .slideshow-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 16px}
       .slideshow-bar .hint{color:var(--ink-soft);font-size:.92rem;font-weight:600}
       .btn[disabled]{opacity:.45;cursor:not-allowed}
+      .selmark{
+        position:absolute;top:10px;left:10px;width:30px;height:30px;border-radius:50%;
+        border:2px solid #fff;background:rgba(20,14,10,.55);color:#fff;
+        display:none;place-items:center;font-size:1.05rem;font-weight:800;z-index:2;
+      }
+      .card.selecting .selmark{display:grid}
+      .card.selected{outline:3px solid var(--accent);outline-offset:-3px}
+      .card.selected .selmark{background:var(--accent);border-color:var(--accent)}
       /* ---------- Upload ---------- */
       .upload{
         background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
@@ -371,8 +379,11 @@
           <h2 id="gallery-h">Gallery</h2>
           <p class="section-sub" id="gallery-sub">Everything in the album, newest first.</p>
           <div class="slideshow-bar">
-            <button class="btn" type="button" id="playSlideshow">▶ Play slideshow</button>
-            <span class="hint">Plays the photos shown below, one every 4 seconds. Use ← → to step, space to pause.</span>
+            <button class="btn" type="button" id="playSlideshow">▶ Play all photos</button>
+            <button class="btn secondary" type="button" id="toggleSelect">Select photos</button>
+            <button class="btn" type="button" id="playSelectedSlideshow" disabled>▶ Play selected (0)</button>
+            <button class="btn secondary hidden" type="button" id="clearSelection">Clear selection</button>
+            <span class="hint">Play all plays every photo shown below. To play only some: tap Select photos, tap the photos you want, then Play selected. One photo every 4 seconds; use ← → to step, space to pause.</span>
           </div>
 
           <div class="grid" id="grid"></div>
@@ -637,17 +648,22 @@
             ? '<video src="' + m.src + '" preload="metadata" muted playsinline></video>' +
               '<span class="play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span>'
             : '<img src="' + m.src + '" alt="' + (m.title || "Photo in Arha's album").replace(/"/g, "&quot;") + '" loading="lazy" />';
-          return '<button type="button" class="card" data-idx="' + idx + '"><figure>' + media +
+          var sel = selectedSrcs[m.src] ? " selected" : "";
+          return '<button type="button" class="card' + (selectMode ? " selecting" : "") + sel + '" data-idx="' + idx + '"><figure>' + media +
+            '<span class="selmark" aria-hidden="true">' + (selectedSrcs[m.src] ? "✓" : "") + "</span>" +
             "<figcaption><span class=\"t\">" + (m.title || "Untitled") + "</span>" +
             '<span class="m">' + prettyDate(m.date) + " · " + m.album + "</span></figcaption></figure></button>";
         }).join("");
         var cards = grid.querySelectorAll(".card");
         for (var i = 0; i < cards.length; i++){
           cards[i].addEventListener("click", function(){
-            openLightbox(items[Number(this.getAttribute("data-idx"))]);
+            var m = items[Number(this.getAttribute("data-idx"))];
+            if (selectMode) toggleSelect(m, this);
+            else openLightbox(m);
           });
         }
         document.getElementById("playSlideshow").disabled = items.length === 0;
+        updateSelectBar();
         if (isEmptyAlbum){
           resultCount.textContent = "The album is empty for now — check back soon.";
         } else {
@@ -707,8 +723,27 @@
         if (cur && cur.type === "video") return; /* videos advance when they finish */
         slideTimer = setTimeout(function(){ stepSlide(1); }, SLIDE_MS);
       }
-      function startSlideshow(fromIdx){
-        slideItems = filtered();
+      var selectMode = false;
+      var selectedSrcs = {};   /* src -> true, kept across filters */
+      function selectedItems(){ return sortedMedia().filter(function(m){ return !!selectedSrcs[m.src]; }); }
+      function selectedCount(){ return Object.keys(selectedSrcs).length; }
+      function updateSelectBar(){
+        var n = selectedCount();
+        var ps = document.getElementById("playSelectedSlideshow");
+        ps.disabled = n === 0;
+        ps.textContent = "▶ Play selected (" + n + ")";
+        document.getElementById("clearSelection").classList.toggle("hidden", n === 0);
+        document.getElementById("toggleSelect").textContent = selectMode ? "Done selecting" : "Select photos";
+      }
+      function toggleSelect(m, cardEl){
+        if (selectedSrcs[m.src]) delete selectedSrcs[m.src];
+        else selectedSrcs[m.src] = true;
+        cardEl.classList.toggle("selected", !!selectedSrcs[m.src]);
+        cardEl.querySelector(".selmark").textContent = selectedSrcs[m.src] ? "✓" : "";
+        updateSelectBar();
+      }
+      function startSlideshow(list, fromIdx){
+        slideItems = list || filtered();
         if (!slideItems.length) return;
         slideIdx = fromIdx || 0;
         slidePlaying = true;
@@ -735,7 +770,16 @@
         if (slidePlaying) stopSlideshow();
         else { slidePlaying = true; updatePlayBtn(); restartSlideTimer(); }
       });
-      document.getElementById("playSlideshow").addEventListener("click", function(){ startSlideshow(0); });
+      document.getElementById("playSlideshow").addEventListener("click", function(){ startSlideshow(filtered(), 0); });
+      document.getElementById("playSelectedSlideshow").addEventListener("click", function(){ startSlideshow(selectedItems(), 0); });
+      document.getElementById("toggleSelect").addEventListener("click", function(){
+        selectMode = !selectMode;
+        renderGallery();
+      });
+      document.getElementById("clearSelection").addEventListener("click", function(){
+        selectedSrcs = {};
+        renderGallery();
+      });
       document.addEventListener("keydown", function(e){
         if (!lightbox.open) return;
         if (e.key === "ArrowRight") stepSlide(1);
