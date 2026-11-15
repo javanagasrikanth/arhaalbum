@@ -253,6 +253,16 @@
         background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
         padding:22px;box-shadow:var(--shadow);
       }
+      .lockbox{
+        background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:22px;box-shadow:var(--shadow);text-align:center;
+      }
+      .lockbox .lock-title{font-family:"Baloo 2",sans-serif;font-weight:700;font-size:1.15rem;display:block}
+      .lockbox input{
+        font:inherit;font-weight:700;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;
+        background:var(--surface-2);color:var(--ink);min-width:170px;text-align:center;letter-spacing:.15em;
+      }
+      .lockbox .lock-error{color:#b3261e;font-weight:700}
       .dropzone{
         border:2px dashed var(--line);border-radius:14px;background:var(--surface-2);
         padding:30px 18px;text-align:center;cursor:pointer;
@@ -346,7 +356,16 @@
         <section aria-labelledby="add-h">
           <h2 id="add-h">Add photos &amp; videos</h2>
           <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away. iPhone <strong>.heic</strong> photos work too — they are converted to JPEG automatically, so they show on any phone or browser.</p>
-          <div class="upload">
+          <div class="lockbox" id="lockBox">
+            <span class="lock-title">🔒 Uploads are locked</span>
+            <p class="section-sub">Enter the family passcode to add photos or videos to this album. Anyone with the link can still view the album — only uploading needs the passcode.</p>
+            <div class="upload-actions" style="justify-content:center">
+              <input type="password" id="passcodeInput" inputmode="numeric" autocomplete="off" placeholder="Enter passcode" aria-label="Upload passcode" />
+              <button class="btn" type="button" id="unlockBtn">Unlock uploads</button>
+            </div>
+            <p class="upload-note lock-error hidden" id="lockError" role="alert">Wrong passcode — try again.</p>
+          </div>
+          <div class="upload hidden" id="uploadBox">
             <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose photos or videos to add">
               <svg viewBox="0 0 24 24"><path d="M12 16V5"/><path d="m7 9 5-5 5 5"/><path d="M4 19.5h16"/></svg>
               <span class="dz-title">Tap to choose photos or videos</span>
@@ -368,6 +387,7 @@
             <p class="upload-note hidden" id="heicStatus" role="status"></p>
             <div class="upload-actions">
               <button class="btn" type="button" id="addToAlbum" disabled>Add to album</button>
+              <button class="btn secondary" type="button" id="lockUploads">Lock uploads</button>
               <button class="btn secondary hidden" type="button" id="showPublish">Show publish steps for these photos</button>
             </div>
             <div class="publish-box hidden" id="publishBox">
@@ -933,6 +953,52 @@
       var dropzone = document.getElementById("dropzone");
       var queueEl = document.getElementById("queue");
       var addBtn = document.getElementById("addToAlbum");
+      /* Upload passcode: the uploader stays hidden until the family passcode
+         is entered. Only the SHA-256 hash of the passcode is stored in this
+         file, never the passcode itself. Once unlocked on a device it stays
+         unlocked on that device until "Lock uploads" is tapped. */
+      var UPLOAD_PASS_HASH = "eb74a9d2245cc418b9db1881c382de506b7f5d81ca6f2505a0e603fb461d76d5";
+      var lockBox = document.getElementById("lockBox");
+      var uploadBox = document.getElementById("uploadBox");
+      var passcodeInput = document.getElementById("passcodeInput");
+      var lockError = document.getElementById("lockError");
+      function showUploader(unlocked){
+        lockBox.classList.toggle("hidden", unlocked);
+        uploadBox.classList.toggle("hidden", !unlocked);
+      }
+      function sha256Hex(text){
+        if (!window.crypto || !crypto.subtle || !crypto.subtle.digest) return Promise.reject(new Error("this browser cannot check the passcode"));
+        return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function(buf){
+          return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ("0" + b.toString(16)).slice(-2); }).join("");
+        });
+      }
+      function tryUnlock(){
+        var code = (passcodeInput.value || "").trim();
+        if (!code) return;
+        sha256Hex(code).then(function(hex){
+          if (hex === UPLOAD_PASS_HASH){
+            try { localStorage.setItem("arhaUploadUnlocked", "1"); } catch (e) {}
+            lockError.classList.add("hidden");
+            passcodeInput.value = "";
+            showUploader(true);
+          } else {
+            lockError.textContent = "Wrong passcode — try again.";
+            lockError.classList.remove("hidden");
+            passcodeInput.value = "";
+            passcodeInput.focus();
+          }
+        }).catch(function(){
+          lockError.textContent = "Could not check the passcode in this browser — try opening the album in Safari or Chrome.";
+          lockError.classList.remove("hidden");
+        });
+      }
+      document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
+      passcodeInput.addEventListener("keydown", function(e){ if (e.key === "Enter") tryUnlock(); });
+      document.getElementById("lockUploads").addEventListener("click", function(){
+        try { localStorage.removeItem("arhaUploadUnlocked"); } catch (e) {}
+        showUploader(false);
+      });
+      try { if (localStorage.getItem("arhaUploadUnlocked") === "1") showUploader(true); } catch (e) {}
       var uploadAlbum = document.getElementById("uploadAlbum");
       var newAlbumWrap = document.getElementById("newAlbumWrap");
       var newAlbumName = document.getElementById("newAlbumName");
