@@ -9,7 +9,7 @@
     <title>Arha's Family Album</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
     <style>
       :root{
         --bg:#fffbf7;
@@ -18,9 +18,10 @@
         --ink:#2e2a25;
         --ink-soft:#6f665c;
         --line:#ecdccf;
-        --accent:#d94f2b;
+        --accent:#cf3f5c;
         --accent-ink:#ffffff;
-        --accent-soft:#ffe3d6;
+        --accent-soft:#ffe0e6;
+        --font-display:"Fraunces",Georgia,serif;
         --sage:#4f7a5b;
         --sage-soft:#e2efe4;
         --gold:#b7791f;
@@ -38,9 +39,9 @@
           --ink:#f5ede4;
           --ink-soft:#c4b6a6;
           --line:#453a30;
-          --accent:#ff7a52;
+          --accent:#ff8296;
           --accent-ink:#23120b;
-          --accent-soft:#4a2b1e;
+          --accent-soft:#4a2330;
           --sage:#9cc7a6;
           --sage-soft:#2c3d2f;
           --gold:#eec26a;
@@ -330,8 +331,45 @@
         .seg{width:100%}
         .seg button{flex:1}
       }
+      /* ---------- Modern, heartfelt touches ---------- */
+      body{
+        background:
+          radial-gradient(900px 480px at 88% -8%, rgba(207,63,92,.09), transparent 60%),
+          radial-gradient(720px 420px at -8% 6%, rgba(183,121,31,.10), transparent 55%),
+          var(--bg);
+      }
+      h1,h2{font-family:var(--font-display);font-weight:600;letter-spacing:.01em}
+      h1{font-size:2.7rem;line-height:1.05}
+      .hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:center;margin:26px 0 34px;padding:26px;border-radius:26px;background:linear-gradient(135deg,var(--surface-2),var(--surface));box-shadow:var(--shadow);overflow:hidden;position:relative}
+      .hero-photo{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:4/3;box-shadow:var(--shadow);background:var(--surface-2)}
+      .hero-photo img{width:100%;height:100%;object-fit:cover;display:block;animation:heroZoom 18s ease-in-out infinite alternate}
+      @keyframes heroZoom{from{transform:scale(1)}to{transform:scale(1.08)}}
+      .hero-eyebrow{color:var(--accent);font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;margin:0 0 8px}
+      .hero-title{font-size:2rem;line-height:1.12;margin:0 0 10px}
+      .hero-sub{color:var(--ink-soft);margin:0 0 18px;font-size:1.05rem}
+      .hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+      .hero-hearts{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+      .hero-hearts span{position:absolute;color:var(--accent);opacity:.35;animation:floatUp 7s ease-in-out infinite}
+      @keyframes floatUp{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-14px) rotate(6deg)}}
+      @media (max-width:700px){.hero{grid-template-columns:1fr;padding:18px}.hero-title{font-size:1.6rem}h1{font-size:2.1rem}}
+      .card{transition:transform .35s ease,box-shadow .35s ease,opacity .5s ease}
+      .card:hover,.card:focus-visible{transform:translateY(-5px);box-shadow:0 18px 36px rgba(90,50,20,.16)}
+      .card img,.card video{transition:transform .5s ease}
+      .card:hover img,.card:hover video{transform:scale(1.06)}
+      .card.reveal{opacity:0;transform:translateY(14px)}
+      .card.reveal.in{opacity:1;transform:translateY(0)}
+      .heart{position:absolute;top:10px;right:10px;z-index:2;width:2.4rem;min-height:2.4rem;display:grid;place-items:center;border-radius:50%;background:rgba(20,12,8,.45);color:#fff;font-size:1.15rem;line-height:1;cursor:pointer;transition:transform .2s ease,background .2s ease}
+      .heart:hover{transform:scale(1.15)}
+      .heart.loved{background:var(--accent);color:#fff;animation:pop .35s ease}
+      @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+      #lbLove.loved{color:var(--accent)}
+      .lb-media.playing img{animation:kb 9s ease-out forwards}
+      @keyframes kb{from{transform:scale(1)}to{transform:scale(1.09)}}
       @media (prefers-reduced-motion: reduce){
         html{scroll-behavior:auto}
+        .hero-photo img,.lb-media.playing img,.hero-hearts span,.heart.loved{animation:none}
+        .card,.card img,.card video{transition:none}
+        .card.reveal{opacity:1;transform:none}
       }
     </style>
   </head>
@@ -344,12 +382,28 @@
           </div>
           <div>
             <h1>Arha&rsquo;s Album</h1>
-            <p class="lede">Photos and videos of Arha, shared with family and friends. Browse everything, pick an album, or jump to a month.</p>
+            <p class="lede">Every giggle, every first step &mdash; Arha&rsquo;s little moments, kept with love. Browse everything, pick an album, or jump to a month.</p>
             <span class="public-pill"><span class="dot"></span>Arha&rsquo;s family album</span>
           </div>
         </div>
         <div class="stats" id="stats" aria-label="Album totals"></div>
       </header>
+
+      <section class="hero" id="hero" aria-label="Featured photo">
+        <div class="hero-photo">
+          <img id="heroImg" src="" alt="Featured photo from Arha's album" />
+          <div class="hero-hearts" aria-hidden="true"><span style="left:12%;top:68%;font-size:1.1rem">♥</span><span style="left:82%;top:16%;font-size:1.4rem;animation-delay:1.2s">♥</span><span style="left:64%;top:76%;font-size:.9rem;animation-delay:2.1s">♥</span></div>
+        </div>
+        <div class="hero-copy">
+          <p class="hero-eyebrow">Arha&rsquo;s family album</p>
+          <h2 class="hero-title">Little moments, big love.</h2>
+          <p class="hero-sub" id="heroSub"></p>
+          <div class="hero-actions">
+            <button class="btn" type="button" id="heroPlay">▶ Play slideshow</button>
+            <button class="btn secondary" type="button" id="heroBrowse">Browse photos</button>
+          </div>
+        </div>
+      </section>
 
       <div class="filters" role="search">
         <div class="filters-inner">
@@ -503,6 +557,7 @@
             <button class="lb-nav-btn" id="lbPlayPause" type="button" aria-label="Play or pause slideshow">▶</button>
             <button class="lb-nav-btn" id="lbNext" type="button" aria-label="Next photo">›</button>
             <button class="lb-nav-btn hidden" id="lbCast" type="button" aria-label="Cast this photo to TV">📺</button>
+            <button class="lb-nav-btn" id="lbLove" type="button" aria-label="Love this photo">♥</button>
           </div>
           <button class="lb-close" id="lbClose" type="button" aria-label="Close viewer">✕</button>
         </div>
@@ -752,6 +807,43 @@
         return MEDIA.slice().sort(function(a, b){ return (b.date || "").localeCompare(a.date || ""); });
       }
 
+      /* ---------- Loved photos (hearts) ---------- */
+      function loadLoved(){ try { return JSON.parse(localStorage.getItem("arhaAlbumLoved") || "{}"); } catch(e){ return {}; } }
+      var loved = loadLoved();
+      function saveLoved(){ try { localStorage.setItem("arhaAlbumLoved", JSON.stringify(loved)); } catch(e){} }
+      function lovedCount(){ return Object.keys(loved).filter(function(k){ return loved[k]; }).length; }
+      function toggleLoved(src){
+        if (!src) return;
+        if (loved[src]) delete loved[src]; else loved[src] = true;
+        saveLoved();
+        renderStats();
+        var hs = grid.querySelectorAll(".heart");
+        for (var i = 0; i < hs.length; i++){
+          if (hs[i].getAttribute("data-src") === src) hs[i].classList.toggle("loved", !!loved[src]);
+        }
+        var lb = document.getElementById("lbLove");
+        if (lb && lightbox.open){
+          var cur = slideItems[slideIdx];
+          if (cur && cur.src === src) lb.classList.toggle("loved", !!loved[src]);
+        }
+      }
+
+      /* ---------- Hero: newest photo, big and warm ---------- */
+      function renderHero(){
+        var hero = document.getElementById("hero");
+        var photo = null;
+        var all = sortedMedia();
+        for (var i = 0; i < all.length; i++){ if (all[i].type === "photo"){ photo = all[i]; break; } }
+        if (!photo){ hero.classList.add("hidden"); return; }
+        hero.classList.remove("hidden");
+        var img = document.getElementById("heroImg");
+        if (img.getAttribute("src") !== photo.src) img.setAttribute("src", photo.src);
+        img.setAttribute("alt", photo.title || "Featured photo from Arha's album");
+        document.getElementById("heroSub").textContent =
+          MEDIA.filter(function(m){ return m.type === "photo"; }).length + " photos · " +
+          albumNames().length + " albums · newest: " + (photo.title || "Untitled");
+      }
+
       function renderStats(){
         var photos = MEDIA.filter(function(m){ return m.type === "photo"; }).length;
         var videos = MEDIA.filter(function(m){ return m.type === "video"; }).length;
@@ -760,7 +852,8 @@
           '<span class="stat"><span class="dot coral"></span><b>' + photos + '</b> photos</span>' +
           '<span class="stat"><span class="dot gold"></span><b>' + videos + '</b> videos</span>' +
           '<span class="stat"><span class="dot sage"></span><b>' + albumNames().length + '</b> albums</span>' +
-          '<span class="stat"><span class="dot sky"></span><b>' + months + '</b> ' + (months === 1 ? "month" : "months") + '</span>';
+          '<span class="stat"><span class="dot sky"></span><b>' + months + '</b> ' + (months === 1 ? "month" : "months") + '</span>' +
+          '<span class="stat"><span style="color:var(--accent)" aria-hidden="true">♥</span> <b>' + lovedCount() + '</b> loved</span>';
       }
 
       function renderSelects(){
@@ -844,7 +937,9 @@
               '<span class="play" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></span>'
             : '<img src="' + m.src + '" alt="' + (m.title || "Photo in Arha's album").replace(/"/g, "&quot;") + '" loading="lazy" draggable="false" />';
           var sel = selectedSrcs[m.src] ? " selected" : "";
-          return '<button type="button" class="card' + (selectMode ? " selecting" : "") + sel + '" data-idx="' + idx + '"><figure>' + media +
+          var revealCls = ("IntersectionObserver" in window) ? " reveal" : "";
+          return '<button type="button" class="card' + (selectMode ? " selecting" : "") + sel + revealCls + '" data-idx="' + idx + '"><figure>' + media +
+            '<span class="heart' + (loved[m.src] ? " loved" : "") + '" role="button" tabindex="0" aria-label="Love this photo" data-src="' + m.src.replace(/"/g, "&quot;") + '">♥</span>' +
             '<span class="selmark" aria-hidden="true">' + (selectedSrcs[m.src] ? "✓" : "") + "</span>" +
             "<figcaption><span class=\"t\">" + (m.title || "Untitled") + "</span>" +
             '<span class="m">' + prettyDate(m.date) + " · " + m.album + "</span></figcaption></figure></button>";
@@ -857,6 +952,27 @@
             else openLightbox(m);
           });
         }
+        var hearts = grid.querySelectorAll(".heart");
+        for (var h = 0; h < hearts.length; h++){
+          hearts[h].addEventListener("click", function(e){
+            e.stopPropagation();
+            toggleLoved(this.getAttribute("data-src"));
+          });
+          hearts[h].addEventListener("keydown", function(e){
+            if (e.key === "Enter" || e.key === " "){
+              e.preventDefault(); e.stopPropagation();
+              toggleLoved(this.getAttribute("data-src"));
+            }
+          });
+        }
+        if ("IntersectionObserver" in window){
+          var io = new IntersectionObserver(function(entries){
+            entries.forEach(function(en){
+              if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+            });
+          }, { threshold: 0.08 });
+          for (var c = 0; c < cards.length; c++) io.observe(cards[c]);
+        }
         document.getElementById("playSlideshow").disabled = items.length === 0;
         updateSelectBar();
         if (isEmptyAlbum){
@@ -868,7 +984,7 @@
       }
 
       function renderAll(){
-        renderStats(); renderSelects(); renderAlbums(); renderMonths(); renderGallery();
+        renderStats(); renderSelects(); renderAlbums(); renderMonths(); renderGallery(); renderHero();
       }
 
       function setFilter(key, value){
@@ -900,6 +1016,8 @@
         }).join("");
         document.getElementById("lbMoveStatus").textContent = "";
         document.getElementById("lbDeleteBtn").textContent = m.type === "video" ? "Delete this video" : "Delete this photo";
+        var lbLoveBtn = document.getElementById("lbLove");
+        if (lbLoveBtn) lbLoveBtn.classList.toggle("loved", !!loved[m.src]);
         document.getElementById("lbDeleteConfirm").classList.add("hidden");
         document.getElementById("lbDeletePasscode").value = "";
         document.getElementById("lbDeleteError").classList.add("hidden");
@@ -967,6 +1085,7 @@
         b.textContent = slidePlaying ? "⏸" : "▶";
         b.classList.toggle("playing", slidePlaying);
         b.setAttribute("aria-label", slidePlaying ? "Pause slideshow" : "Play slideshow");
+        document.getElementById("lbMedia").classList.toggle("playing", slidePlaying);
       }
       document.getElementById("lbPrev").addEventListener("click", function(){ stepSlide(-1); });
       document.getElementById("lbNext").addEventListener("click", function(){ stepSlide(1); });
@@ -975,6 +1094,21 @@
         if (slidePlaying) stopSlideshow();
         else { slidePlaying = true; updatePlayBtn(); restartSlideTimer(); }
       });
+      document.getElementById("lbLove").addEventListener("click", function(){
+        var m = slideItems[slideIdx];
+        if (m) toggleLoved(m.src);
+      });
+      /* Swipe left/right in the viewer to move between photos. */
+      var touchStartX = null;
+      document.getElementById("lbMedia").addEventListener("touchstart", function(e){
+        touchStartX = e.changedTouches[0].clientX;
+      }, { passive: true });
+      document.getElementById("lbMedia").addEventListener("touchend", function(e){
+        if (touchStartX === null) return;
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        touchStartX = null;
+        if (Math.abs(dx) > 40) stepSlide(dx < 0 ? 1 : -1);
+      }, { passive: true });
       /* ---------- Move a photo to another album ---------- */
       function loadOverrides(){
         try { return JSON.parse(localStorage.getItem("arhaAlbumOverrides") || "{}"); }
@@ -1164,6 +1298,8 @@
         });
       });
       document.getElementById("playSlideshow").addEventListener("click", function(){ startSlideshow(filtered(), 0); });
+      document.getElementById("heroPlay").addEventListener("click", function(){ startSlideshow(filtered(), 0); });
+      document.getElementById("heroBrowse").addEventListener("click", function(){ document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" }); });
       document.getElementById("playSelectedSlideshow").addEventListener("click", function(){ startSlideshow(selectedItems(), 0); });
       document.getElementById("toggleSelect").addEventListener("click", function(){
         selectMode = !selectMode;
