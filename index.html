@@ -368,7 +368,7 @@
       <main>
         <section aria-labelledby="add-h">
           <h2 id="add-h">Add photos &amp; videos</h2>
-          <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away. iPhone <strong>.heic</strong> photos work too — they are converted to JPEG automatically, so they show on any phone or browser.</p>
+          <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away — and are published to the family album automatically, so everyone can see them on any device. iPhone <strong>.heic</strong> photos work too — they are converted to JPEG automatically, so they show on any phone or browser.</p>
           <div class="lockbox" id="lockBox">
             <span class="lock-title">🔒 Uploads are locked</span>
             <p class="section-sub">Enter the family passcode to add photos or videos to this album.</p>
@@ -404,7 +404,7 @@
               <button class="btn secondary hidden" type="button" id="showPublish">Show publish steps for these photos</button>
             </div>
             <div class="publish-box hidden" id="publishBox">
-              <p class="upload-note">Added photos stay in this album on this device, even after you close the page and come back. To put them on the family album site so everyone can see them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
+              <p class="upload-note">Photos added here are normally published to the family album automatically, so everyone can see them. The items below could <em>not</em> be published automatically (for example videos, or photos added while the upload failed) — they stay on this device only, even after you close the page and come back. To put them on the family album site so everyone can see them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
               <p class="upload-note hidden" id="movedNote"></p>
               <p class="upload-note hidden" id="deletedNote"></p>
               <textarea id="publishText" readonly aria-label="Album entries for the added photos"></textarea>
@@ -460,7 +460,9 @@
         </section>
 
         <details class="guide" id="add-guide">
-          <summary>For the family — publishing added photos on GitHub &amp; Netlify</summary>
+          <summary>For the family — how photos get published</summary>
+          <p>Photos added from this page are published automatically — they are uploaded to the family album&rsquo;s photo storage and appear for everyone, on any device, with no extra steps.</p>
+          <p>The manual steps below are only needed for items that could <em>not</em> be published automatically (videos, or photos whose upload failed) — those are listed under &ldquo;Show publish steps for these photos&rdquo; above the gallery.</p>
           <ol>
             <li>Put the photo or video file in the <code>photos/</code> folder of the site (next to <code>index.html</code>).</li>
             <li>Open <code>index.html</code>, find the list marked <code>MEDIA</code> near the top of the script at the bottom, and add one line per file:
@@ -468,8 +470,7 @@
   album: "Milestones", date: "2026-11-14",
   title: "First steps in the living room" }</code></pre>
             </li>
-            <li><strong>GitHub:</strong> commit and push — if the repo is linked to Netlify, the site updates on its own in about a minute.</li>
-            <li><strong>Netlify (manual):</strong> drag the whole site folder onto your Netlify site&rsquo;s Deploys page instead.</li>
+            <li>Commit and push to GitHub — the site updates on its own in about a minute.</li>
           </ol>
           <p>Albums are just names in that list — use one of the four album names below, or type a new name and it becomes a new album automatically. The month comes from the <code>date</code> on each line.</p>
           <p><strong>iPhone .heic photos:</strong> they are converted to JPEG in the browser when you add them, so the file to save into <code>photos/</code> is the downloaded JPEG (with the <code>.jpg</code> name shown in the publish steps), not the original <code>.heic</code> file.</p>
@@ -506,7 +507,7 @@
           <span class="mv-status" id="lbDeleteStatus" role="status"></span>
         </div>
         <div class="lb-delete-confirm hidden" id="lbDeleteConfirm">
-          <p>Delete &ldquo;<span id="lbDeleteTitle"></span>&rdquo;? It will be removed from this album on this device.</p>
+          <p>Delete &ldquo;<span id="lbDeleteTitle"></span>&rdquo;? <span id="lbDeleteNote">It will be removed from this album on this device.</span></p>
           <input type="password" id="lbDeletePasscode" inputmode="numeric" autocomplete="off" placeholder="Enter passcode to delete" aria-label="Delete passcode" />
           <button class="btn danger" id="lbDeleteConfirmBtn" type="button">Delete</button>
           <button class="btn secondary" id="lbDeleteCancelBtn" type="button">Cancel</button>
@@ -518,9 +519,11 @@
     <script>
       /* ================================================================
          THE ALBUM'S CONTENTS
-         This page starts EMPTY — no photos from Arha's private album
-         were copied here. To add a photo or video, copy its file into
-         a photos/ folder next to this file and add one line below:
+         Photos added from the site itself are published automatically
+         to the family album's photo storage and loaded below — they
+         never need a line here. The list below is only for photos
+         added straight to the repo: copy the file into a photos/
+         folder next to this file and add one line per photo:
 
          { src: "photos/park-day.jpg", type: "photo",
            album: "Out & About", date: "2026-11-14",
@@ -601,6 +604,103 @@
           blurb: "Parks, trips, and adventures beyond the front door.",
           icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6z"/></svg>' }
       ];
+
+      /* ---------- Cloudinary: automatic publishing ---------- */
+      /* Photos added from this page are uploaded straight to the
+         family album's free Cloudinary storage (unsigned preset
+         "arhaalbum", tag "arhaalbum"), and this page loads them back
+         from Cloudinary's public list, so they appear for everyone
+         with no repo change. Videos stay on this device only — they
+         still need the manual publish steps. */
+      var CLOUDINARY_CLOUD = "dtwo9zcs";
+      var CLOUDINARY_PRESET = "arhaalbum";
+      var CLOUDINARY_TAG = "arhaalbum";
+      function cloudListUrl(){
+        return "https://res.cloudinary.com/" + CLOUDINARY_CLOUD + "/image/list/" + CLOUDINARY_TAG + ".json";
+      }
+      function cloudImageUrl(r){
+        return "https://res.cloudinary.com/" + CLOUDINARY_CLOUD +
+          "/image/upload/f_auto,q_auto,w_1600/v" + r.version + "/" + r.public_id + "." + r.format;
+      }
+      function escCtx(str){
+        return String(str == null ? "" : str).replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/=/g, "\\=");
+      }
+      function loadCloudOverrides(){
+        try { return JSON.parse(localStorage.getItem("arhaAlbumCloudOverrides") || "{}"); }
+        catch(e){ return {}; }
+      }
+      function saveCloudOverride(id, album){
+        try {
+          var o = loadCloudOverrides();
+          o[id] = album;
+          localStorage.setItem("arhaAlbumCloudOverrides", JSON.stringify(o));
+        } catch(e){}
+      }
+      function loadCloudHidden(){
+        try { return JSON.parse(localStorage.getItem("arhaAlbumCloudHidden") || "[]"); }
+        catch(e){ return []; }
+      }
+      function saveCloudHidden(id){
+        try {
+          var h = loadCloudHidden();
+          if (h.indexOf(id) === -1) h.push(id);
+          localStorage.setItem("arhaAlbumCloudHidden", JSON.stringify(h));
+        } catch(e){}
+      }
+      function postCloudinary(form){
+        return fetch("https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD + "/image/upload", { method: "POST", body: form })
+          .then(function(res){
+            return res.json().then(function(data){
+              if (!res.ok || !data.secure_url) throw new Error((data && data.error && data.error.message) || ("upload failed (" + res.status + ")"));
+              return data;
+            });
+          });
+      }
+      function uploadToCloudinary(file, album, date, title){
+        var form = new FormData();
+        form.append("file", file);
+        form.append("upload_preset", CLOUDINARY_PRESET);
+        form.append("tags", CLOUDINARY_TAG);
+        form.append("context", "album=" + escCtx(album) + "|taken=" + escCtx(date) + "|title=" + escCtx(title));
+        return postCloudinary(form).catch(function(){
+          /* Some accounts refuse the context field on unsigned uploads:
+             retry with just the file, preset and tag. */
+          var retry = new FormData();
+          retry.append("file", file);
+          retry.append("upload_preset", CLOUDINARY_PRESET);
+          retry.append("tags", CLOUDINARY_TAG);
+          return postCloudinary(retry);
+        });
+      }
+      function cloudEntry(r){
+        var ctx = (r.context && r.context.custom) || {};
+        var name = String(r.public_id || "").split("/").pop();
+        var overrides = loadCloudOverrides();
+        var entry = {
+          src: cloudImageUrl(r), type: "photo",
+          album: ctx.album || "Everyday Moments",
+          date: ctx.taken || String(r.created_at || "").slice(0, 10),
+          title: ctx.title || cleanTitle(name),
+          cloudId: r.public_id, cloud: true
+        };
+        if (overrides[r.public_id]) entry.album = overrides[r.public_id];
+        return entry;
+      }
+      function fetchCloudPhotos(){
+        return fetch(cloudListUrl()).then(function(res){ return res.json(); }).then(function(data){
+          var resources = (data && data.resources) || [];
+          var hidden = loadCloudHidden();
+          var added = 0;
+          resources.forEach(function(r){
+            if (!r.public_id) return;
+            if (hidden.indexOf(r.public_id) !== -1) return;
+            if (MEDIA.some(function(m){ return m.cloudId === r.public_id; })) return;
+            MEDIA.push(cloudEntry(r));
+            added++;
+          });
+          if (added){ renderAll(); renderUploadAlbums(); }
+        }).catch(function(){ /* offline, or nothing published yet: the repo photos still show */ });
+      }
 
       var state = { type: "all", album: "all", month: "all", query: "" };
 
@@ -891,13 +991,24 @@
         });
       }
       function persistAlbumMove(m){
-        if (m.uploadId){
+        if (m.cloudId){
+          saveCloudOverride(m.cloudId, m.album);
+        } else if (m.uploadId){
           updateUploadAlbum(m.uploadId, m.album).catch(warnStorage);
         } else if (m.src && m.src.indexOf("photos/") === 0){
           saveOverride(m.src, m.album);
           /* so its updated line shows in the publish steps */
           if (sessionAdded.indexOf(m) === -1) sessionAdded.push(m);
         }
+      }
+      /* The publish-steps button only matters for items that live on
+         this device only (failed uploads, videos, moved/deleted repo
+         photos). Photos published to Cloudinary never need it. */
+      function refreshPublishButton(){
+        var need = sessionAdded.some(function(m){ return !m.cloud; }) ||
+          deletedPublished.length > 0 ||
+          sessionAdded.some(function(m){ return !m.cloudId && m.movedFrom && m.movedFrom !== m.album; });
+        document.getElementById("showPublish").classList.toggle("hidden", !need);
       }
       document.getElementById("lbMoveBtn").addEventListener("click", function(){
         var m = slideItems[slideIdx];
@@ -917,8 +1028,8 @@
         else { lightbox.close(); }
         var statusEl = document.getElementById("lbMoveStatus");
         if (statusEl) statusEl.textContent = "Moved to " + to + " ✓" +
-          (m.uploadId ? "" : " — saved on this device; use Show publish steps to make it permanent for everyone.");
-        document.getElementById("showPublish").classList.remove("hidden");
+          ((m.cloudId || m.uploadId) ? " — saved on this device only." : " — saved on this device; use Show publish steps to make it permanent for everyone.");
+        refreshPublishButton();
       });
       /* ---------- Delete a photo (same family passcode as uploads) ---------- */
       var deletedPublished = []; /* {src, title, fileName} — published photos deleted on this device */
@@ -948,10 +1059,23 @@
       }
       function doDelete(m){
         var next = slideItems[slideIdx + 1] || slideItems[slideIdx - 1];
+        if (m.cloudId){
+          /* Photos published to the album's storage cannot be deleted
+             from this page (unsigned uploads get no delete token), so
+             hide it on this device. Removing it for everyone needs the
+             album's photo storage — ask me and I will remove it. */
+          saveCloudHidden(m.cloudId);
+          removeFromMedia(m);
+          afterDelete(next, "Hidden on this device ✓ — it is still in the family album for everyone else. To remove it for everyone, ask me and I will delete it from the album's photo storage.");
+          return;
+        }
         if (m.uploadId){
           deleteUploadRecord(m.uploadId).catch(function(){});
           removeFromMedia(m);
-        } else if (m.src && m.src.indexOf("photos/") === 0){
+          afterDelete(next, "Deleted ✓ — saved on this device; use Show publish steps to remove it for everyone.");
+          return;
+        }
+        if (m.src && m.src.indexOf("photos/") === 0){
           var list = loadDeleted();
           if (list.filter(function(d){ return d.src === m.src; }).length === 0){
             list.push({ src: m.src, title: m.title || "", fileName: m.src.replace("photos/", "") });
@@ -963,12 +1087,16 @@
              publish steps) can be opened to make the deletion permanent */
           try { localStorage.setItem("arhaUploadUnlocked", "1"); } catch(e){}
           showUploader(true);
-        } else {
-          removeFromMedia(m);
+          afterDelete(next, "Deleted ✓ — saved on this device; use Show publish steps to remove it for everyone.");
+          return;
         }
+        removeFromMedia(m);
+        afterDelete(next, "Deleted ✓");
+      }
+      function afterDelete(next, msg){
         stopSlideshow();
         renderAll();
-        document.getElementById("showPublish").classList.remove("hidden");
+        refreshPublishButton();
         slideItems = filtered();
         if (next && slideItems.indexOf(next) !== -1){
           slideIdx = slideItems.indexOf(next);
@@ -977,12 +1105,18 @@
           lightbox.close();
         }
         var st = document.getElementById("lbDeleteStatus");
-        if (st) st.textContent = "Deleted ✓ — saved on this device; use Show publish steps to remove it for everyone.";
+        if (st) st.textContent = msg;
       }
       document.getElementById("lbDeleteBtn").addEventListener("click", function(){
         var m = slideItems[slideIdx];
         if (!m) return;
         document.getElementById("lbDeleteTitle").textContent = m.title || "Untitled";
+        var noteEl = document.getElementById("lbDeleteNote");
+        if (noteEl){
+          noteEl.textContent = m.cloudId
+            ? "It will only be hidden on this device — it stays in the family album for everyone else."
+            : "It will be removed from this album on this device.";
+        }
         document.getElementById("lbDeleteConfirm").classList.remove("hidden");
         document.getElementById("lbDeletePasscode").value = "";
         document.getElementById("lbDeleteError").classList.add("hidden");
@@ -1357,41 +1491,56 @@
         var toSave = pending.slice();
         pending = [];
         renderQueue();
-        /* Save one photo at a time and wait for each save to finish: firing
-           dozens of large saves at once can make the phone's browser storage
-           refuse them, so photos showed for the session and vanished on
-           reopen. Count what actually saved and say so plainly. */
+        /* Publish one photo at a time and wait for each to finish. Photos
+           go straight to the album's photo storage (Cloudinary), so they
+           appear for everyone with no extra steps. If a photo cannot be
+           published (offline, or the upload is refused), it is saved on
+           this device instead, and the publish steps below make it
+           permanent. Videos are always saved on this device only. */
         addBtn.disabled = true;
-        addBtn.textContent = "Saving…";
-        heicStatus("Saving " + toSave.length + " photo" + (toSave.length === 1 ? "" : "s") + " on this device — please keep this page open until it finishes…", true);
-        var saved = 0, failed = 0, lastErr = "";
+        addBtn.textContent = "Publishing…";
+        heicStatus("Publishing " + toSave.length + " item" + (toSave.length === 1 ? "" : "s") + " to the family album — please keep this page open until it finishes…", true);
+        var published = 0, savedLocal = 0, failed = 0, lastErr = "";
         var chain = Promise.resolve();
         toSave.forEach(function(p){
           chain = chain.then(function(){
-            var upId = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-            var entry = { src: p.url, type: p.type, album: album, date: date,
-                          title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted, uploadId: upId };
-            MEDIA.push(entry);
-            sessionAdded.push(entry);
-            return saveUpload({ id: upId,
-              blob: p.file, type: p.type, album: album, date: date,
-              title: entry.title, fileName: p.file.name, converted: !!p.converted })
-              .then(function(){ saved++; })
+            var title = p.title.trim() || "Untitled";
+            if (p.type === "photo"){
+              return uploadToCloudinary(p.file, album, date, title).then(function(data){
+                var entry = { src: cloudImageUrl({ version: data.version, public_id: data.public_id, format: data.format }),
+                              type: "photo", album: album, date: date, title: title,
+                              fileName: p.file.name, converted: !!p.converted,
+                              cloudId: data.public_id, cloud: true };
+                MEDIA.push(entry);
+                sessionAdded.push(entry);
+                published++;
+              }).catch(function(err){
+                lastErr = (err && err.message) || "upload failed";
+                if (/failed to fetch|networkerror|network request failed/i.test(lastErr)) lastErr = "no connection, or the album's photo storage could not be reached";
+                return saveLocally(p, album, date, title).then(function(){ savedLocal++; })
+                  .catch(function(e2){ failed++; if (e2) lastErr = (e2.name ? e2.name + ": " : "") + (e2.message || ""); });
+              });
+            }
+            return saveLocally(p, album, date, title).then(function(){ savedLocal++; })
               .catch(function(err){ failed++; if (err) lastErr = (err.name ? err.name + ": " : "") + (err.message || ""); });
           });
         });
         chain.then(function(){
           addBtn.disabled = false;
           addBtn.textContent = "Add to album";
-          if (failed === 0){
-            heicStatus("Saved " + saved + " photo" + (saved === 1 ? "" : "s") + " on this device ✓ — they will still be here when you reopen the page. Use Show publish steps below to make them visible to everyone.", true);
+          var total = toSave.length;
+          if (failed === 0 && savedLocal === 0){
+            heicStatus("Published " + published + " photo" + (published === 1 ? "" : "s") + " to the family album ✓ — everyone can see them now, on any device.", true);
+          } else if (failed === 0){
+            var pubPart = published > 0 ? "Published " + published + " photo" + (published === 1 ? "" : "s") + " to the family album ✓. " : "";
+            heicStatus(pubPart + savedLocal + " item" + (savedLocal === 1 ? "" : "s") + " could not be published (" + lastErr + ") — saved on this device only; use Show publish steps below to make them visible to everyone.", true);
           } else {
             var reason = "";
             if (/quota/i.test(lastErr)) reason = "the phone's storage is full or the batch was too big — try adding about 10 at a time.";
             else if (/security|not allowed|denied|blocked|unknownerror|abort/i.test(lastErr)) reason = "this browser is blocking the album's storage (private mode or blocked cookies can do this) — try opening the album in Safari, not private mode.";
-            else if (lastErr) reason = "the phone's storage refused it (" + lastErr + ").";
-            else reason = "the phone's storage refused the rest. Try adding about 10 at a time.";
-            heicStatus("Saved " + saved + " of " + toSave.length + " photos on this device — " + reason + " Or send the photos to me in chat and I will publish them for you.", true);
+            else if (lastErr) reason = "the upload and the phone's storage both refused it (" + lastErr + ").";
+            else reason = "the upload and the phone's storage both refused the rest. Try adding about 10 at a time.";
+            heicStatus("Published " + published + " of " + total + " photos to the family album. " + savedLocal + " saved on this device only — " + reason + " Or send the photos to me in chat and I will publish them for you.", true);
           }
           /* Show the album the photos just went into: the gallery may still be
              filtered to another album (e.g. Diwali 2026), which would hide the
@@ -1402,21 +1551,31 @@
             segBtns[j].setAttribute("aria-pressed", segBtns[j].getAttribute("data-type") === "all" ? "true" : "false");
           renderAll();
           renderUploadAlbums();
-          document.getElementById("showPublish").classList.remove("hidden");
+          refreshPublishButton();
           document.getElementById("gallery-section").scrollIntoView({ behavior: "smooth" });
         });
       });
+      function saveLocally(p, album, date, title){
+        var upId = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+        var entry = { src: p.url, type: p.type, album: album, date: date,
+                      title: title, fileName: p.file.name, converted: !!p.converted, uploadId: upId };
+        MEDIA.push(entry);
+        sessionAdded.push(entry);
+        return saveUpload({ id: upId,
+          blob: p.file, type: p.type, album: album, date: date,
+          title: entry.title, fileName: p.file.name, converted: !!p.converted });
+      }
 
       document.getElementById("showPublish").addEventListener("click", function(){
         var hasConverted = sessionAdded.some(function(m){ return m.converted; });
         document.getElementById("downloadConverted").classList.toggle("hidden", !hasConverted);
-        var lines = sessionAdded.map(function(m){
+        var lines = sessionAdded.filter(function(m){ return !m.cloud; }).map(function(m){
           return '{ src: "photos/' + m.fileName + '", type: "' + m.type + '", album: "' +
             m.album.replace(/"/g, '\\"') + '", date: "' + m.date + '", title: "' +
             (m.title || "").replace(/"/g, '\\"') + '" }';
         });
         document.getElementById("publishText").value = lines.join(",\n");
-        var moved = sessionAdded.filter(function(m){ return m.movedFrom && m.movedFrom !== m.album; });
+        var moved = sessionAdded.filter(function(m){ return !m.cloud && m.movedFrom && m.movedFrom !== m.album; });
         var dn = document.getElementById("deletedNote");
         if (deletedPublished.length){
           dn.textContent = "Deleted photos — to remove them for everyone, delete these lines from the MEDIA list in index.html and delete the file from the photos/ folder: " +
@@ -1456,6 +1615,9 @@
 
       renderAll();
       renderUploadAlbums();
+      /* Load photos published from the site (Cloudinary) and merge them
+         with the photos in the MEDIA list above. */
+      fetchCloudPhotos();
       /* Bring back photos added in earlier sessions on this device,
          and album moves made in earlier sessions. */
       loadUploads().then(function(items){
@@ -1484,7 +1646,7 @@
         });
         renderAll();
         renderUploadAlbums();
-        if (items.length || Object.keys(overrides).length) document.getElementById("showPublish").classList.remove("hidden");
+        refreshPublishButton();
       }).catch(function(){ /* first visit, or this browser has no storage: nothing to restore */ });
     </script>
   </body>
