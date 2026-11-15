@@ -232,6 +232,11 @@
         padding:0 10px;font-weight:800;
       }
       .lb-nav-btn.playing{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+      .lb-move{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:0 18px 16px}
+      .lb-move label{font-weight:700;font-size:.92rem;color:var(--ink-soft)}
+      .lb-move select{flex:1 1 160px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:8px 10px;font:inherit}
+      .lb-move .btn{padding:10px 16px}
+      .lb-move .mv-status{width:100%;color:var(--ink-soft);font-size:.9rem;font-weight:600}
       .slideshow-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 16px}
       .slideshow-bar .hint{color:var(--ink-soft);font-size:.92rem;font-weight:600}
       .btn[disabled]{opacity:.45;cursor:not-allowed}
@@ -367,6 +372,7 @@
             </div>
             <div class="publish-box hidden" id="publishBox">
               <p class="upload-note">Added photos stay in this album on this device, even after you close the page and come back. To put them on the public site so anyone with the link sees them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
+              <p class="upload-note hidden" id="movedNote"></p>
               <textarea id="publishText" readonly aria-label="Album entries for the added photos"></textarea>
               <div class="upload-actions">
                 <button class="btn secondary" type="button" id="copyPublish">Copy these lines</button>
@@ -454,6 +460,12 @@
             <button class="lb-nav-btn" id="lbNext" type="button" aria-label="Next photo">›</button>
           </div>
           <button class="lb-close" id="lbClose" type="button" aria-label="Close viewer">✕</button>
+        </div>
+        <div class="lb-move">
+          <label for="lbMoveAlbum">Move to album:</label>
+          <select id="lbMoveAlbum"></select>
+          <button class="btn" id="lbMoveBtn" type="button">Move</button>
+          <span class="mv-status" id="lbMoveStatus" role="status"></span>
         </div>
       </div>
     </dialog>
@@ -703,6 +715,10 @@
         document.getElementById("lbMeta").textContent = prettyDate(m.date) + " · " + m.album;
         document.getElementById("lbCount").textContent =
           slideItems.length > 1 ? (slideIdx + 1) + " of " + slideItems.length : "";
+        document.getElementById("lbMoveAlbum").innerHTML = albumNames().map(function(n){
+          return '<option value="' + n.replace(/"/g, "&quot;") + '"' + (n === m.album ? " selected" : "") + ">" + n + "</option>";
+        }).join("");
+        document.getElementById("lbMoveStatus").textContent = "";
         var vid = media.querySelector("video");
         if (vid) vid.addEventListener("ended", function(){ if (slidePlaying) stepSlide(1); });
       }
@@ -772,6 +788,63 @@
         if (!slideItems.length) return;
         if (slidePlaying) stopSlideshow();
         else { slidePlaying = true; updatePlayBtn(); restartSlideTimer(); }
+      });
+      /* ---------- Move a photo to another album ---------- */
+      function loadOverrides(){
+        try { return JSON.parse(localStorage.getItem("arhaAlbumOverrides") || "{}"); }
+        catch(e){ return {}; }
+      }
+      function saveOverride(src, album){
+        try {
+          var o = loadOverrides();
+          o[src] = album;
+          localStorage.setItem("arhaAlbumOverrides", JSON.stringify(o));
+        } catch(e){ /* storage unavailable: the move still applies for this session */ }
+      }
+      function updateUploadAlbum(id, album){
+        return openAlbumDB().then(function(db){
+          return new Promise(function(resolve, reject){
+            var tx = db.transaction("uploads", "readwrite");
+            var store = tx.objectStore("uploads");
+            var req = store.get(id);
+            req.onsuccess = function(){
+              var rec = req.result;
+              if (rec){ rec.album = album; store.put(rec); }
+            };
+            tx.oncomplete = resolve;
+            tx.onerror = function(){ reject(tx.error || new Error("could not save the move")); };
+          });
+        });
+      }
+      function persistAlbumMove(m){
+        if (m.uploadId){
+          updateUploadAlbum(m.uploadId, m.album).catch(warnStorage);
+        } else if (m.src && m.src.indexOf("photos/") === 0){
+          saveOverride(m.src, m.album);
+          /* so its updated line shows in the publish steps */
+          if (sessionAdded.indexOf(m) === -1) sessionAdded.push(m);
+        }
+      }
+      document.getElementById("lbMoveBtn").addEventListener("click", function(){
+        var m = slideItems[slideIdx];
+        var to = document.getElementById("lbMoveAlbum").value;
+        if (!m || !to || m.album === to) return;
+        var from = m.album;
+        m.album = to;
+        if (!m.uploadId && m.src && m.src.indexOf("photos/") === 0 && !m.movedFrom) m.movedFrom = from;
+        persistAlbumMove(m);
+        var oldList = slideItems.slice();
+        var next = oldList[slideIdx + 1] || oldList[slideIdx - 1];
+        renderAll();
+        slideItems = filtered();
+        var ni = slideItems.indexOf(m);
+        if (ni !== -1){ slideIdx = ni; renderLightbox(m); }
+        else if (next && slideItems.indexOf(next) !== -1){ slideIdx = slideItems.indexOf(next); renderLightbox(next); }
+        else { lightbox.close(); }
+        var statusEl = document.getElementById("lbMoveStatus");
+        if (statusEl) statusEl.textContent = "Moved to " + to + " ✓" +
+          (m.uploadId ? "" : " — saved on this device; use Show publish steps to make it permanent for everyone.");
+        document.getElementById("showPublish").classList.remove("hidden");
       });
       document.getElementById("playSlideshow").addEventListener("click", function(){ startSlideshow(filtered(), 0); });
       document.getElementById("playSelectedSlideshow").addEventListener("click", function(){ startSlideshow(selectedItems(), 0); });
@@ -1041,11 +1114,12 @@
           : uploadAlbum.value;
         var date = uploadDate.value || "";
         pending.forEach(function(p){
+          var upId = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
           var entry = { src: p.url, type: p.type, album: album, date: date,
-                        title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted };
+                        title: p.title.trim() || "Untitled", fileName: p.file.name, converted: !!p.converted, uploadId: upId };
           MEDIA.push(entry);
           sessionAdded.push(entry);
-          saveUpload({ id: Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+          saveUpload({ id: upId,
             blob: p.file, type: p.type, album: album, date: date,
             title: entry.title, fileName: p.file.name, converted: !!p.converted })
             .catch(warnStorage);
@@ -1067,6 +1141,15 @@
             (m.title || "").replace(/"/g, '\\"') + '" }';
         });
         document.getElementById("publishText").value = lines.join(",\n");
+        var moved = sessionAdded.filter(function(m){ return m.movedFrom && m.movedFrom !== m.album; });
+        var mn = document.getElementById("movedNote");
+        if (moved.length){
+          mn.textContent = "Moved photos — change the album on these lines in index.html instead of adding a new line: " +
+            moved.map(function(m){ return (m.title || m.fileName) + ": " + m.movedFrom + " → " + m.album; }).join("; ") + ".";
+          mn.classList.remove("hidden");
+        } else {
+          mn.classList.add("hidden");
+        }
         document.getElementById("publishBox").classList.remove("hidden");
         document.getElementById("publishBox").scrollIntoView({ behavior: "smooth", block: "center" });
       });
@@ -1090,19 +1173,27 @@
 
       renderAll();
       renderUploadAlbums();
-      /* Bring back photos added in earlier sessions on this device. */
+      /* Bring back photos added in earlier sessions on this device,
+         and album moves made in earlier sessions. */
       loadUploads().then(function(items){
-        if (!items.length) return;
+        var overrides = loadOverrides();
+        MEDIA.forEach(function(m){
+          if (overrides[m.src] && overrides[m.src] !== m.album){
+            m.movedFrom = m.album;
+            m.album = overrides[m.src];
+            if (sessionAdded.indexOf(m) === -1) sessionAdded.push(m);
+          }
+        });
         items.forEach(function(it){
           var url = URL.createObjectURL(it.blob);
           var entry = { src: url, type: it.type, album: it.album, date: it.date,
-                        title: it.title, fileName: it.fileName, converted: !!it.converted };
+                        title: it.title, fileName: it.fileName, converted: !!it.converted, uploadId: it.id };
           MEDIA.push(entry);
           sessionAdded.push(entry);
         });
         renderAll();
         renderUploadAlbums();
-        document.getElementById("showPublish").classList.remove("hidden");
+        if (items.length || Object.keys(overrides).length) document.getElementById("showPublish").classList.remove("hidden");
       }).catch(function(){ /* first visit, or this browser has no storage: nothing to restore */ });
     </script>
   </body>
