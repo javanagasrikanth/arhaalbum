@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="description" content="Arha's public photo and video album — browse by album and by month." />
+    <meta name="description" content="Arha's family photo and video album — browse by album and by month." />
     <link rel="icon" href="data:," />
-    <title>Arha's Public Album</title>
+    <title>Arha's Family Album</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
@@ -332,7 +332,7 @@
           <div>
             <h1>Arha&rsquo;s Album</h1>
             <p class="lede">Photos and videos of Arha, shared with family and friends. Browse everything, pick an album, or jump to a month.</p>
-            <span class="public-pill"><span class="dot"></span>Public album — anyone with the link can view it, no sign-in needed, on any phone or browser</span>
+            <span class="public-pill"><span class="dot"></span>Arha&rsquo;s family album</span>
           </div>
         </div>
         <div class="stats" id="stats" aria-label="Album totals"></div>
@@ -358,7 +358,7 @@
           <p class="section-sub">Pick files from this phone or computer, choose which album they belong to, and they appear in the gallery below straight away. iPhone <strong>.heic</strong> photos work too — they are converted to JPEG automatically, so they show on any phone or browser.</p>
           <div class="lockbox" id="lockBox">
             <span class="lock-title">🔒 Uploads are locked</span>
-            <p class="section-sub">Enter the family passcode to add photos or videos to this album. Anyone with the link can still view the album — only uploading needs the passcode.</p>
+            <p class="section-sub">Enter the family passcode to add photos or videos to this album.</p>
             <div class="upload-actions" style="justify-content:center">
               <input type="password" id="passcodeInput" inputmode="numeric" autocomplete="off" placeholder="Enter passcode" aria-label="Upload passcode" />
               <button class="btn" type="button" id="unlockBtn">Unlock uploads</button>
@@ -391,7 +391,7 @@
               <button class="btn secondary hidden" type="button" id="showPublish">Show publish steps for these photos</button>
             </div>
             <div class="publish-box hidden" id="publishBox">
-              <p class="upload-note">Added photos stay in this album on this device, even after you close the page and come back. To put them on the public site so anyone with the link sees them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
+              <p class="upload-note">Added photos stay in this album on this device, even after you close the page and come back. To put them on the family album site so everyone can see them on any device: save each file into the site&rsquo;s <code>photos/</code> folder with the file name below, paste these lines into the <code>MEDIA</code> list in <code>index.html</code>, then commit &amp; push to GitHub (Netlify updates itself) — full steps are in &ldquo;How photos get added&rdquo; at the bottom of this page.</p>
               <p class="upload-note hidden" id="movedNote"></p>
               <textarea id="publishText" readonly aria-label="Album entries for the added photos"></textarea>
               <div class="upload-actions">
