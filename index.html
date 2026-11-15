@@ -2057,7 +2057,7 @@
         html += '<div class="pin">Diwali 2026 — diyas, lights and giggles at the temple<span class="who">Our festival of lights</span></div>';
         html += '<div class="pin"><span id="wallCount">' + MEDIA.length + '</span> precious moments — and counting!<span class="who">Every photo tells a story</span></div>';
         html += '<div class="pin">Playgrounds, parks, naps and yawns<span class="who">Everyday magic</span></div>';
-        wallNotes.forEach(function(n, idx){
+        (wallNotes || []).forEach(function(n, idx){
           html += '<div class="pin">' + escWall(n.text) + '<span class="who">— ' + escWall(n.name || "Family") + '</span><button class="del" type="button" data-wall-del="' + idx + '" aria-label="Remove this note">×</button></div>';
         });
         grid.innerHTML = html;
