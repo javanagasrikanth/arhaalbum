@@ -361,6 +361,7 @@
       .heart.loved{background:var(--accent);color:#fff;animation:pop .35s ease}
       @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
       #lbLove.loved{color:var(--accent)}
+      #lbMusic.playing{color:var(--accent)}
       .lb-media.playing img{animation:kb 9s ease-out forwards}
       @keyframes kb{from{transform:scale(1)}to{transform:scale(1.09)}}
       /* ---------- Playful interactive background + kids' wall ---------- */
@@ -562,6 +563,7 @@
             <button class="btn" type="button" id="playSelectedSlideshow" disabled>▶ Play selected (0)</button>
             <button class="btn secondary hidden" type="button" id="clearSelection">Clear selection</button>
             <button class="btn secondary hidden" type="button" id="castBtn">📺 Cast to TV</button>
+            <button class="btn secondary" type="button" id="musicBtn">♪ Play our song</button>
             <span class="hint hidden" id="castStatus" role="status"></span>
             <span class="hint">Play all plays every photo shown below. To play only some: tap Select photos, tap the photos you want, then Play selected. One photo every 4 seconds; use ← → to step, space to pause.</span>
           </div>
@@ -643,6 +645,7 @@
             <button class="lb-nav-btn" id="lbNext" type="button" aria-label="Next photo">›</button>
             <button class="lb-nav-btn hidden" id="lbCast" type="button" aria-label="Cast this photo to TV">📺</button>
             <button class="lb-nav-btn" id="lbLove" type="button" aria-label="Love this photo">♥</button>
+            <button class="lb-nav-btn" id="lbMusic" type="button" aria-label="Play our song">♪</button>
           </div>
           <button class="lb-close" id="lbClose" type="button" aria-label="Close viewer">✕</button>
         </div>
@@ -666,6 +669,7 @@
       </div>
     </dialog>
 
+    <audio id="lullabyAudio" src="https://res.cloudinary.com/dtwo9zcs/video/upload/arha-lullaby.mp3" loop preload="metadata"></audio>
     <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     <script>
       /* ================================================================
@@ -1933,6 +1937,7 @@
       }
       function castCurrentPhoto(m){
         if (!castSession) return;
+        if (musicOn) { castMusic(m || currentPhoto()); return; }
         castPhoto(m || currentPhoto());
       }
       function updateCastButtons(state){
@@ -1952,6 +1957,7 @@
           castSession = null;
           setCastStatus("");
           updateCastButtons(castCtx ? castCtx.getCastState() : "NOT_CONNECTED");
+          if (musicOn && musicAudio) musicAudio.play().catch(function(){});
         } else if (state === "SESSION_START_FAILED"){
           setCastStatus("Could not connect to the TV — check it is on and on the same Wi-Fi.");
         }
@@ -1983,6 +1989,55 @@
         if (castCtx.getCurrentSession()) { castCurrentPhoto(); return; }
         castCtx.requestSession().then(function(){}, function(){});
       });
+
+      /* ---------- Our song — gentle music-box lullaby ---------- */
+      /* Plays on this device, and on the TV too when casting: the song
+         is sent to the TV as an audio item with the current photo as
+         its artwork, so the photos keep changing while the song plays. */
+      var MUSIC_URL = "https://res.cloudinary.com/dtwo9zcs/video/upload/arha-lullaby.mp3";
+      var musicOn = false;
+      var musicAudio = document.getElementById("lullabyAudio");
+      var musicBtn = document.getElementById("musicBtn");
+      var lbMusicBtn = document.getElementById("lbMusic");
+      if (musicAudio) musicAudio.volume = 0.8;
+      function updateMusicButtons(){
+        if (musicBtn) musicBtn.textContent = musicOn ? "♪ Playing our song" : "♪ Play our song";
+        if (lbMusicBtn) lbMusicBtn.classList.toggle("playing", musicOn);
+      }
+      function castMusic(m){
+        if (!castSession) return;
+        var mediaInfo = new chrome.cast.media.MediaInfo(MUSIC_URL, "audio/mp3");
+        var meta = new chrome.cast.media.MusicTrackMediaMetadata();
+        meta.title = "Arha's lullaby";
+        meta.artist = "Arha's family album";
+        var photo = castableUrl(m || currentPhoto());
+        if (photo) meta.images = [new chrome.cast.Image(photo)];
+        mediaInfo.metadata = meta;
+        var req = new chrome.cast.media.LoadRequest(mediaInfo);
+        try {
+          var ms = castSession.getMediaSession && castSession.getMediaSession();
+          if (ms && ms.getEstimatedTime){ var t = ms.getEstimatedTime(); if (t > 1) req.currentTime = t; }
+        } catch(e){}
+        castSession.loadMedia(req).then(function(){
+          setCastStatus("Playing our song on the TV");
+        }, function(){
+          setCastStatus("Could not play the song on the TV — try again.");
+        });
+        if (musicAudio) musicAudio.pause();
+      }
+      function toggleMusic(){
+        musicOn = !musicOn;
+        updateMusicButtons();
+        if (musicOn){
+          if (castSession){ castMusic(); }
+          else if (musicAudio){ musicAudio.play().catch(function(){}); }
+        } else {
+          if (musicAudio) musicAudio.pause();
+          if (castSession) castCurrentPhoto();
+        }
+      }
+      if (musicBtn) musicBtn.addEventListener("click", toggleMusic);
+      if (lbMusicBtn) lbMusicBtn.addEventListener("click", toggleMusic);
 
       /* ---------- Playful interactive background ---------- */
       (function(){
