@@ -389,7 +389,11 @@
       @keyframes sparkleUp{from{opacity:1;transform:translateY(0) scale(.6)}to{opacity:0;transform:translateY(-34px) scale(1.3)}}
       .parade{overflow:hidden;padding:10px 0 4px;position:relative;z-index:1}
       .parade .march{display:inline-block;white-space:nowrap;animation:marchAcross 30s linear infinite;font-size:2rem}
-      .parade .march span{display:inline-block;margin:0 .45em;cursor:pointer;pointer-events:auto}
+      .parade .march span{display:inline-block}
+      .parade .march > span{margin:0 .45em;cursor:pointer;pointer-events:auto}
+      /* The animals face the way they walk — right — so the parade
+         unmistakably marches in from the left and out to the right. */
+      .flip{display:inline-block;transform:scaleX(-1)}
       .parade-hint{text-align:center;color:var(--ink-soft);font-weight:700;font-size:.92rem;margin:0 0 10px}
       @keyframes marchAcross{from{transform:translateX(-30vw)}to{transform:translateX(115vw)}}
       /* Each animal walks its own way in the parade */
@@ -563,7 +567,7 @@
             <button class="btn" type="button" id="playSelectedSlideshow" disabled>▶ Play selected (0)</button>
             <button class="btn secondary hidden" type="button" id="clearSelection">Clear selection</button>
             <button class="btn secondary hidden" type="button" id="castBtn">📺 Cast to TV</button>
-            <button class="btn secondary" type="button" id="musicBtn">♪ Play our song</button>
+            <button class="btn secondary" type="button" id="musicBtn">♪ Slideshow with our song</button>
             <span class="hint hidden" id="castStatus" role="status"></span>
             <span class="hint">Play all plays every photo shown below. To play only some: tap Select photos, tap the photos you want, then Play selected. One photo every 4 seconds; use ← → to step, space to pause.</span>
           </div>
@@ -627,7 +631,7 @@
       <footer>Arha&rsquo;s Album · Made with love by her family</footer>
     </div>
 
-    <div class="parade" role="group" aria-label="Tap an animal to watch it walk"><div class="march"><span class="walk-elephant" data-animal="elephant" title="Tap me — I walk slow and heavy, like a real elephant!">🐘</span><span class="walk-lion" data-animal="lion" style="animation-delay:.15s" title="Tap me — I prowl along!">🦁</span><span class="walk-rabbit" data-animal="rabbit" style="animation-delay:.3s" title="Tap me — I hop!">🐰</span><span class="walk-giraffe" data-animal="giraffe" style="animation-delay:.45s" title="Tap me — I take long, slow steps!">🦒</span><span class="walk-bear" data-animal="bear" style="animation-delay:.6s" title="Tap me — I lumber along!">🐻</span><span class="walk-panda" data-animal="panda" style="animation-delay:.75s" title="Tap me — I waddle!">🐼</span><span class="walk-fox" data-animal="fox" style="animation-delay:.9s" title="Tap me — I trot quickly!">🦊</span><span class="walk-monkey" data-animal="monkey" style="animation-delay:1.05s" title="Tap me — I scamper!">🐵</span><span class="walk-balloon" data-animal="balloon" style="animation-delay:1.2s" title="Tap me — I float across!">🎈</span></div></div>
+    <div class="parade" role="group" aria-label="Tap an animal to watch it walk"><div class="march"><span class="flip" data-animal="elephant" title="Tap me — I walk slow and heavy, like a real elephant!"><span class="walk-elephant">🐘</span></span><span class="flip" data-animal="lion" title="Tap me — I prowl along!"><span class="walk-lion" style="animation-delay:.15s">🦁</span></span><span class="flip" data-animal="rabbit" title="Tap me — I hop!"><span class="walk-rabbit" style="animation-delay:.3s">🐰</span></span><span class="flip" data-animal="giraffe" title="Tap me — I take long, slow steps!"><span class="walk-giraffe" style="animation-delay:.45s">🦒</span></span><span class="flip" data-animal="bear" title="Tap me — I lumber along!"><span class="walk-bear" style="animation-delay:.6s">🐻</span></span><span class="flip" data-animal="panda" title="Tap me — I waddle!"><span class="walk-panda" style="animation-delay:.75s">🐼</span></span><span class="flip" data-animal="fox" title="Tap me — I trot quickly!"><span class="walk-fox" style="animation-delay:.9s">🦊</span></span><span class="flip" data-animal="monkey" title="Tap me — I scamper!"><span class="walk-monkey" style="animation-delay:1.05s">🐵</span></span><span class="flip" data-animal="balloon" title="Tap me — I float across!"><span class="walk-balloon" style="animation-delay:1.2s">🎈</span></span></div></div>
     <p class="parade-hint">Tap an animal and watch it walk — the elephant walks slow and heavy, just like a real elephant!</p>
 
     <dialog id="lightbox" aria-label="Photo viewer">
@@ -645,7 +649,7 @@
             <button class="lb-nav-btn" id="lbNext" type="button" aria-label="Next photo">›</button>
             <button class="lb-nav-btn hidden" id="lbCast" type="button" aria-label="Cast this photo to TV">📺</button>
             <button class="lb-nav-btn" id="lbLove" type="button" aria-label="Love this photo">♥</button>
-            <button class="lb-nav-btn" id="lbMusic" type="button" aria-label="Play our song">♪</button>
+            <button class="lb-nav-btn" id="lbMusic" type="button" aria-label="Play the slideshow with our song">♪</button>
           </div>
           <button class="lb-close" id="lbClose" type="button" aria-label="Close viewer">✕</button>
         </div>
@@ -1163,11 +1167,14 @@
         updatePlayBtn();
         if (typeof lightbox.showModal === "function" && !lightbox.open) lightbox.showModal();
         restartSlideTimer();
+        if (musicOn && !castSession) startMusic();
       }
       function stopSlideshow(){
         slidePlaying = false;
         clearTimeout(slideTimer);
         updatePlayBtn();
+        /* The song only plays with the slideshow — stopping it stops the song too. */
+        if (musicOn){ musicOn = false; updateMusicButtons(); stopMusic(); }
       }
       function updatePlayBtn(){
         var b = document.getElementById("lbPlayPause");
@@ -1181,7 +1188,7 @@
       document.getElementById("lbPlayPause").addEventListener("click", function(){
         if (!slideItems.length) return;
         if (slidePlaying) stopSlideshow();
-        else { slidePlaying = true; updatePlayBtn(); restartSlideTimer(); }
+        else { slidePlaying = true; updatePlayBtn(); restartSlideTimer(); if (musicOn) startMusic(); }
       });
       document.getElementById("lbLove").addEventListener("click", function(){
         var m = slideItems[slideIdx];
@@ -1937,7 +1944,8 @@
       }
       function castCurrentPhoto(m){
         if (!castSession) return;
-        if (musicOn) { castMusic(m || currentPhoto()); return; }
+        /* The song only plays while the slideshow is running. */
+        if (musicOn && slidePlaying) { castMusic(m || currentPhoto()); return; }
         castPhoto(m || currentPhoto());
       }
       function updateCastButtons(state){
@@ -1957,7 +1965,7 @@
           castSession = null;
           setCastStatus("");
           updateCastButtons(castCtx ? castCtx.getCastState() : "NOT_CONNECTED");
-          if (musicOn && musicAudio) musicAudio.play().catch(function(){});
+          if (musicOn && slidePlaying && musicAudio) musicAudio.play().catch(function(){});
         } else if (state === "SESSION_START_FAILED"){
           setCastStatus("Could not connect to the TV — check it is on and on the same Wi-Fi.");
         }
@@ -1991,9 +1999,11 @@
       });
 
       /* ---------- Our song — gentle music-box lullaby ---------- */
-      /* Plays on this device, and on the TV too when casting: the song
-         is sent to the TV as an audio item with the current photo as
-         its artwork, so the photos keep changing while the song plays. */
+      /* The song only ever plays with a slideshow: tapping the ♪ button
+         starts the slideshow with the song, and the song stops when the
+         slideshow stops or the viewer closes. On the TV (casting) it
+         plays through the TV speakers with the current photo as its
+         artwork; on this device it plays here. It never plays on its own. */
       var MUSIC_URL = "https://res.cloudinary.com/dtwo9zcs/video/upload/arha-lullaby.mp3";
       var musicOn = false;
       var musicAudio = document.getElementById("lullabyAudio");
@@ -2001,8 +2011,16 @@
       var lbMusicBtn = document.getElementById("lbMusic");
       if (musicAudio) musicAudio.volume = 0.8;
       function updateMusicButtons(){
-        if (musicBtn) musicBtn.textContent = musicOn ? "♪ Playing our song" : "♪ Play our song";
+        if (musicBtn) musicBtn.textContent = musicOn ? "♪ Playing with the slideshow" : "♪ Slideshow with our song";
         if (lbMusicBtn) lbMusicBtn.classList.toggle("playing", musicOn);
+      }
+      function startMusic(){
+        if (castSession){ castMusic(); }
+        else if (musicAudio){ musicAudio.play().catch(function(){}); }
+      }
+      function stopMusic(){
+        if (musicAudio) musicAudio.pause();
+        if (castSession) castPhoto(currentPhoto());
       }
       function castMusic(m){
         if (!castSession) return;
@@ -2026,14 +2044,19 @@
         if (musicAudio) musicAudio.pause();
       }
       function toggleMusic(){
-        musicOn = !musicOn;
-        updateMusicButtons();
         if (musicOn){
-          if (castSession){ castMusic(); }
-          else if (musicAudio){ musicAudio.play().catch(function(){}); }
+          /* Song off — the photos keep playing on silently. */
+          musicOn = false;
+          updateMusicButtons();
+          stopMusic();
         } else {
-          if (musicAudio) musicAudio.pause();
-          if (castSession) castCurrentPhoto();
+          musicOn = true;
+          updateMusicButtons();
+          if (slidePlaying){ startMusic(); }
+          else {
+            var list = (slideItems && slideItems.length) ? slideItems : undefined;
+            startSlideshow(list, slideIdx || 0);
+          }
         }
       }
       if (musicBtn) musicBtn.addEventListener("click", toggleMusic);
@@ -2179,10 +2202,13 @@
             w.className = "walker";
             w.style.setProperty("--walk-dur", (dur / 1000) + "s");
             w.setAttribute("aria-hidden", "true");
+            var flip = document.createElement("span");
+            flip.className = "flip";
             var inner = document.createElement("span");
             inner.className = "walk-" + kind;
             inner.textContent = sp.textContent;
-            w.appendChild(inner);
+            flip.appendChild(inner);
+            w.appendChild(flip);
             document.body.appendChild(w);
             setTimeout(function(){ if (w.parentNode) w.parentNode.removeChild(w); }, dur + 200);
           });
